@@ -1,36 +1,25 @@
+import { toPng } from 'html-to-image'
 import { atom } from 'nanostores'
 import { themeClass } from '../theme'
 import tier from '../components/tier'
 import { allProviderIds } from '../providers'
+import { CAMERA_ICON } from '../lib/icons'
+import { initialTierState, moveProvider, spawnTier, deleteTier, type TierState } from '../lib/tiers'
 
-const TIERS = ['S', 'A', 'B', 'C', 'D', 'F'] as const
+/** Provider placement per tier. Everyone starts in F. */
+const tierState = atom<TierState>(initialTierState(allProviderIds))
 
-type TierItems = Record<string, string[]>
-
-/** Provider ids per tier letter. Everyone starts in F. */
-const tierItems = atom<TierItems>(
-  Object.fromEntries(
-    TIERS.map((letter) => [letter, letter === 'F' ? [...allProviderIds] : []] as const),
-  ),
-)
-
-const tiersHtml = (items: TierItems): string =>
-  TIERS.map((letter) => tier({ letter, items: items[letter] ?? [] })).join('')
-
-/**
- * Move a provider to a tier, removing it from any other. When `beforeId` is
- * given the provider is inserted in front of it, otherwise it is appended.
- */
-const moveProvider = (items: TierItems, id: string, to: string, beforeId?: string): TierItems =>
-  Object.fromEntries(
-    Object.entries(items).map(([letter, list]) => {
-      const rest = list.filter((item) => item !== id)
-      if (letter !== to) return [letter, rest] as const
-      const at = beforeId ? rest.indexOf(beforeId) : -1
-      if (at === -1) return [letter, [...rest, id]] as const
-      return [letter, [...rest.slice(0, at), id, ...rest.slice(at)]] as const
-    }),
-  )
+const tiersHtml = ({ order, items }: TierState): string =>
+  order
+    .map((id) =>
+      tier({
+        id,
+        items: items[id] ?? [],
+        canSpawnAbove: !order.includes(`${id}+`),
+        canSpawnBelow: !order.includes(`${id}-`),
+      }),
+    )
+    .join('')
 
 /** Custom MIME type so only our own drags light up the UI. */
 const DRAG_MIME = 'application/x-ai-tierlist'
@@ -44,7 +33,7 @@ export default function (app: HTMLDivElement) {
   let ghost: HTMLElement | null = null
 
   // Re-render the tier rows, gliding surviving providers into their new spots (FLIP).
-  const renderTiers = (items: TierItems) => {
+  const renderTiers = (state: TierState) => {
     const root = app.querySelector<HTMLElement>('[data-tiers]')
     if (!root) return
 
@@ -54,7 +43,7 @@ export default function (app: HTMLDivElement) {
       if (id) before.set(id, cell.getBoundingClientRect())
     }
 
-    root.innerHTML = tiersHtml(items)
+    root.innerHTML = tiersHtml(state)
 
     for (const cell of root.querySelectorAll<HTMLElement>('[data-provider]')) {
       const id = cell.dataset.provider
@@ -90,7 +79,58 @@ export default function (app: HTMLDivElement) {
     }
     lastMovedId = null
   }
-  tierItems.subscribe(renderTiers)
+  tierState.subscribe(renderTiers)
+
+  // Hover controls on the tier letter: +/− spawn a variant, trash deletes it.
+  app.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return
+    const spawn = event.target.closest<HTMLElement>('[data-add-above], [data-add-below]')
+    if (spawn) {
+      const id = spawn.dataset.addAbove ?? spawn.dataset.addBelow
+      if (id) tierState.set(spawnTier(tierState.get(), id, spawn.dataset.addAbove ? '+' : '-'))
+      return
+    }
+    const remove = event.target.closest<HTMLElement>('[data-remove]')
+    if (remove?.dataset.remove) tierState.set(deleteTier(tierState.get(), remove.dataset.remove))
+  })
+
+  // Camera-flash feedback while the tier list is being captured.
+  const flash = () => {
+    const el = document.createElement('div')
+    el.className = 'export-flash'
+    el.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(el)
+    el.addEventListener('animationend', () => el.remove(), { once: true })
+  }
+
+  // Capture the whole tier list (including rows scrolled out of view) as a PNG download.
+  let exporting = false
+  const exportPng = async () => {
+    const node = app.querySelector<HTMLElement>('[data-tiers]')
+    if (!node || exporting) return
+    exporting = true
+    try {
+      flash()
+      const dataUrl = await toPng(node, {
+        pixelRatio: 2,
+        backgroundColor: '#111111',
+        width: node.scrollWidth,
+        height: node.scrollHeight,
+      })
+      const link = document.createElement('a')
+      link.download = 'ai-tierlist.png'
+      link.href = dataUrl
+      link.click()
+    } catch (error) {
+      console.error('Failed to export the tier list', error)
+    } finally {
+      exporting = false
+    }
+  }
+
+  app.addEventListener('click', (event) => {
+    if (event.target instanceof Element && event.target.closest('[data-export]')) void exportPng()
+  })
 
   const clearGlow = () => {
     for (const el of app.querySelectorAll('[data-tier].drag-over')) el.classList.remove('drag-over')
@@ -102,8 +142,8 @@ export default function (app: HTMLDivElement) {
   }
 
   const currentTierOf = (id: string): string | undefined => {
-    const items = tierItems.get()
-    return TIERS.find((letter) => items[letter]?.includes(id))
+    const { order, items } = tierState.get()
+    return order.find((tierId) => items[tierId]?.includes(id))
   }
 
   /**
@@ -187,8 +227,8 @@ export default function (app: HTMLDivElement) {
     const row =
       event.target instanceof Element ? event.target.closest<HTMLElement>('[data-tier]') : null
     const id = event.dataTransfer?.getData(DRAG_MIME)
-    const letter = row?.dataset.tier
-    if (!row || !id || !letter) return
+    const tierId = row?.dataset.tier
+    if (!row || !id || !tierId) return
     event.preventDefault()
 
     // Land exactly where the ghost preview showed.
@@ -200,7 +240,7 @@ export default function (app: HTMLDivElement) {
     if (beforeId === id) return // dropped onto itself — nothing to move
 
     lastMovedId = id
-    tierItems.set(moveProvider(tierItems.get(), id, letter, beforeId))
+    tierState.set(moveProvider(tierState.get(), id, tierId, beforeId))
   })
 
   // Cleanup after cancelled drags (successful drops re-render fresh markup).
@@ -220,8 +260,17 @@ export default function (app: HTMLDivElement) {
         data-tiers
         class="flex-1 flex flex-col w-full h-full rounded-2xl md:rounded-3xl border border-tier-border overflow-x-hidden overflow-y-auto divide-y divide-tier-border shadow-2xl"
       >
-        ${tiersHtml(tierItems.get())}
+        ${tiersHtml(tierState.get())}
       </div>
+      <button
+        type="button"
+        data-export
+        aria-label="Save tier list as PNG"
+        title="Save tier list as PNG"
+        class="fixed top-4 right-4 sm:top-6 sm:right-6 z-50 inline-flex items-center justify-center h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-brand text-white shadow-lg shadow-brand/40 cursor-pointer select-none hover:scale-110 active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      >
+        ${CAMERA_ICON}
+      </button>
     </div>
   `
 }

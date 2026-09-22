@@ -13,14 +13,16 @@
     "fmt:check": "oxfmt --check"
   },
   "dependencies": {
+    "html-to-image": "^1.11.13",
+    "lucide-static": "^1.47.0",
     "nanostores": "^1.5.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
-    "oxfmt": "^0.68.0",
-    "oxlint": "^1.83.0",
+    "oxfmt": "^0.70.0",
+    "oxlint": "^1.85.0",
     "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.2",
+    "typescript": "^7.0.2",
     "vite": "^8.3.0"
   },
   "devEngines": {

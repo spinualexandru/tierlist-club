@@ -1,24 +1,24 @@
 // Single source of truth for the agent logos bundled from src/assets/.
 // Add a provider by dropping its SVG into src/assets/ and extending the list below.
 
-import amp from './assets/amp.svg'
-import antigravity from './assets/antigravity.svg'
-import claude from './assets/claude.svg'
-import cline from './assets/cline.svg'
-import codex from './assets/codex.svg'
-import cursor from './assets/cursor.svg'
-import devin from './assets/devin.svg'
-import droid from './assets/droid.svg'
-import fx from './assets/fx.svg'
-import githubCopilot from './assets/github-copilot.svg'
-import grok from './assets/grok.svg'
-import nanocoder from './assets/nanocoder.svg'
-import ohMyPi from './assets/oh-my-pi.svg'
-import opencode from './assets/opencode.svg'
-import pi from './assets/pi.svg'
-import rooCode from './assets/roo-code.svg'
-import warp from './assets/warp.svg'
-import zed from './assets/zed.svg'
+import amp from './assets/logos/amp.svg'
+import antigravity from './assets/logos/antigravity.svg'
+import claude from './assets/logos/claude.svg'
+import cline from './assets/logos/cline.svg'
+import codex from './assets/logos/codex.svg'
+import cursor from './assets/logos/cursor.svg'
+import devin from './assets/logos/devin.svg'
+import droid from './assets/logos/droid.svg'
+import fx from './assets/logos/fx.svg'
+import githubCopilot from './assets/logos/github-copilot.svg'
+import grok from './assets/logos/grok.svg'
+import nanocoder from './assets/logos/nanocoder.svg'
+import ohMyPi from './assets/logos/oh-my-pi.svg'
+import opencode from './assets/logos/opencode.svg'
+import pi from './assets/logos/pi.svg'
+import rooCode from './assets/logos/roo-code.svg'
+import warp from './assets/logos/warp.svg'
+import zed from './assets/logos/zed.svg'
 
 export interface Provider {
   /** Stable identifier used to reference the provider (e.g. in tier item lists). */
@@ -31,7 +31,7 @@ export interface Provider {
 
 export const providers: Provider[] = [
   { id: 'amp', name: 'Amp', logo: amp },
-  { id: 'antigravity', name: 'AntiGravity', logo: antigravity },
+  { id: 'antigravity', name: 'Antigravity', logo: antigravity },
   { id: 'claude', name: 'Claude', logo: claude },
   { id: 'cline', name: 'Cline', logo: cline },
   { id: 'codex', name: 'Codex', logo: codex },

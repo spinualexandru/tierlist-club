@@ -1,8 +1,14 @@
+import { MINUS_ICON, PLUS_ICON, TRASH_ICON } from '../lib/icons'
+
 import { providersMap } from '../providers'
 
 export interface TierProps {
-  letter: string
+  /** Full tier id: a base letter (S–F) plus any +/- modifiers, e.g. 'A+'. */
+  id: string
   items?: string[]
+  /** Whether +/− can spawn (false when that variant already exists). */
+  canSpawnAbove?: boolean
+  canSpawnBelow?: boolean
 }
 
 const tierColorMap: Record<string, string> = {
@@ -14,22 +20,82 @@ const tierColorMap: Record<string, string> = {
   F: 'bg-tier-f',
 }
 
+/** Base letter of a tier id ('A+' → 'A'), which picks its color. */
+const baseLetterOf = (id: string): string => id.replace(/[+-]/g, '')
+
+/** Spawned +/- variants can be deleted; base tiers cannot. */
+const isSubTier = (id: string): boolean => id !== baseLetterOf(id)
+
+/** Hidden until the tier block is hovered (or keyboard-focused). */
+const CONTROL_HIDDEN = 'opacity-0 transition duration-150 ease-out'
+
+const spawnControl = (
+  id: string,
+  direction: 'above' | 'below',
+  icon: string,
+  enabled: boolean,
+): string => html`
+  <button
+    type="button"
+    data-add-${direction}="${id}"
+    aria-label="Add tier ${direction}"
+    ${enabled ? '' : 'disabled'}
+    class="m-0 p-0 inline-flex items-center justify-center h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 rounded-full text-tier-text select-none ${CONTROL_HIDDEN} ${
+      enabled
+        ? 'cursor-pointer group-hover:opacity-100 focus-visible:opacity-100 enabled:hover:bg-black/10 enabled:active:scale-90'
+        : 'cursor-not-allowed group-hover:opacity-30'
+    }"
+  >
+    ${icon}
+  </button>
+`
+
+/** The letter itself — or, for deletable variants, a trash icon on hover. */
+const letterSlot = (id: string): string => {
+  const letter = html`
+    <span
+      class="m-0 p-0 leading-none ${
+        isSubTier(id) ? 'transition-opacity duration-150 group-hover:opacity-0' : ''
+      }"
+      >${id}</span
+    >
+  `
+  if (!isSubTier(id)) return letter
+
+  return html`
+    <span class="relative inline-flex items-center justify-center">
+      ${letter}
+      <button
+        type="button"
+        data-remove="${id}"
+        aria-label="Delete tier"
+        class="m-0 p-0 absolute inset-0 inline-flex items-center justify-center text-tier-text cursor-pointer select-none active:scale-90 ${CONTROL_HIDDEN} group-hover:opacity-100 focus-visible:opacity-100"
+      >
+        ${TRASH_ICON}
+      </button>
+    </span>
+  `
+}
+
 export function tier(props: TierProps): string
 export function tier(app: HTMLElement, props: TierProps): string
 export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: TierProps): string {
   const props = (maybeProps ?? appOrProps) as TierProps
-  const colorClass = tierColorMap[props.letter] ?? 'bg-neutral-600'
+  const colorClass = tierColorMap[baseLetterOf(props.id)] ?? 'bg-neutral-600'
   const items = props.items ?? []
+  const canAbove = props.canSpawnAbove ?? true
+  const canBelow = props.canSpawnBelow ?? true
 
   return html`
     <div
-      data-tier="${props.letter}"
-      class="tier-row grow shrink-0 min-h-[216px] sm:min-h-[240px] md:min-h-[152px] flex md:flex-row flex-col sm:flex-col xs:flex-col items-stretch w-full overflow-hidden"
+      data-tier="${props.id}"
+      class="tier-row grow shrink-0 min-h-[216px] sm:min-h-[240px] md:min-h-[152px] flex md:flex-row flex-col sm:flex-col items-stretch w-full overflow-hidden"
     >
       <div
-        class="w-full h-24 md:h-full sm:w-full sm:h-24 xs:h-24 xs:w-full  md:w-42 lg:w-46 shrink-0 flex items-center justify-center p-2 sm:p-4 md:p-6 text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-medium leading-none select-none text-tier-text ${colorClass}"
+        class="group w-full sm:w-full md:w-42 lg:w-46 md:h-full shrink-0 flex flex-col items-center justify-center gap-1 sm:gap-1.5 md:gap-2 p-2 sm:p-4 md:p-6 text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-medium leading-none select-none text-tier-text ${colorClass}"
       >
-        <p class="m-0 p-0 leading-none">${props.letter}</p>
+        ${spawnControl(props.id, 'above', PLUS_ICON, canAbove)} ${letterSlot(props.id)}
+        ${spawnControl(props.id, 'below', MINUS_ICON, canBelow)}
       </div>
       <div
         data-items
@@ -39,6 +105,7 @@ export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: T
           .map((item) => {
             const provider = providersMap[item]
             const src = provider?.logo ?? item
+            console.log(src)
             const label = provider?.name ?? item
             return html`
               <div

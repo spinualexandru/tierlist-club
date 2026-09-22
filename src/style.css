@@ -89,3 +89,24 @@ body {
     transform: scale(0.4);
   }
 }
+
+/* --- PNG export --- */
+
+/* Camera flash while the tier list is being captured */
+.export-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background-color: #ffffff;
+  animation: export-flash 350ms ease-out forwards;
+}
+
+@keyframes export-flash {
+  from {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 0;
+  }
+}

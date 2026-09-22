@@ -1,3 +1,91 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand: #3b82f6;
+
+  --color-background: #111111;
+  --color-border: #161616;
+  --color-tier-border: #161616;
+  --color-tier-text: #111111;
+
+  --color-tier-s: #ff7f7e;
+  --color-tier-a: #ffbf7f;
+  --color-tier-b: #ffdf80;
+  --color-tier-c: #f2f481;
+  --color-tier-d: #c1ff80;
+  --color-tier-f: #7eff80;
+}
+
+:root,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   font-family: sans-serif;
+  background-color: var(--color-background);
+  color: #ffffff;
+}
+
+/* --- Drag-and-drop feedback --- */
+
+.tier-row {
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out;
+}
+
+/* Tier highlighted while a provider hovers over it */
+.tier-row.drag-over {
+  border-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.12);
+}
+
+/* Source cell while its provider is being dragged */
+.provider-cell.dragging {
+  opacity: 0.35;
+}
+
+.provider-cell.dragging .provider-chip {
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 0 18px 3px rgba(255, 255, 255, 0.35);
+}
+
+/* Cell pop-in when dropped into a tier */
+.provider-cell.dropped {
+  animation: provider-pop-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Ghost preview showing where the provider will land */
+.provider-cell.ghost {
+  pointer-events: none;
+  opacity: 0.4;
+  animation: ghost-fade-in 120ms ease-out;
+}
+
+.provider-cell.ghost .provider-chip {
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 0 18px 3px rgba(255, 255, 255, 0.22);
+}
+
+@keyframes ghost-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes provider-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
 }

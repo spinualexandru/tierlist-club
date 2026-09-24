@@ -1,4 +1,3 @@
-import { toPng } from 'html-to-image'
 import { atom } from 'nanostores'
 import { themeClass } from '../theme'
 import tier from '../components/tier'
@@ -111,6 +110,7 @@ export default function (app: HTMLDivElement) {
     exporting = true
     try {
       flash()
+      const { toPng } = await import('html-to-image')
       const dataUrl = await toPng(node, {
         pixelRatio: 2,
         backgroundColor: '#111111',

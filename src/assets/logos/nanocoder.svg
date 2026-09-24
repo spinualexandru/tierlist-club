@@ -1,5 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF">
-  <!-- Source: https://github.com/Nano-Collective/nanocoder (plugins/vscode/media/icon.svg), white for dark background -->
-  <path d="M 2 5 H 5 V 8 H 7 V 12 H 9 V 5 H 12 V 19 H 9 V 16 H 7 V 12 H 5 V 19 H 2 Z"/>
-  <path d="M 14 5 H 22 V 8 H 17 V 16 H 22 V 19 H 14 Z"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="#fff" viewBox="0 0 24 24"><path d="M2 5h3v3h2v4h2V5h3v14H9v-3H7v-4H5v7H2ZM14 5h8v3h-5v8h5v3h-8Z"/></svg>

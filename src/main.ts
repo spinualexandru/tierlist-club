@@ -1,3 +1,4 @@
+import './lib/render'
 import './style.css'
 import render from './views'
 

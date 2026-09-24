@@ -19,6 +19,7 @@ import goose from '../assets/logos/goose.svg'
 import grok from '../assets/logos/grok.svg'
 import hermes from '../assets/logos/hermes.svg'
 import jcode from '../assets/logos/jcode.svg'
+import junie from '../assets/logos/junie.svg'
 import kiloCode from '../assets/logos/kilo-code.svg'
 import museCode from '../assets/logos/muse-code.svg'
 import nanocoder from '../assets/logos/nanocoder.svg'
@@ -31,6 +32,7 @@ import pi from '../assets/logos/pi.svg'
 import primeAgent from '../assets/logos/prime-agent.svg'
 import qwenCode from '../assets/logos/qwen-code.svg'
 import rooCode from '../assets/logos/roo-code.svg'
+import vibe from '../assets/logos/vibe.svg'
 import warp from '../assets/logos/warp.svg'
 import zed from '../assets/logos/zed.svg'
 
@@ -55,7 +57,9 @@ export const harnesses: TierList = {
     { id: 'grok', name: 'Grok Build', image: grok },
     { id: 'hermes', name: 'Hermes', image: hermes },
     { id: 'jcode', name: 'jcode', image: jcode },
+    { id: 'junie', name: 'Junie', image: junie },
     { id: 'kilo-code', name: 'Kilo Code', image: kiloCode },
+    { id: 'mistral-vibe', name: 'Mistral Vibe', image: vibe },
     { id: 'muse-code', name: 'Muse Code', image: museCode },
     { id: 'nanocoder', name: 'nanocoder', image: nanocoder },
     { id: 'oh-my-pi', name: 'Oh MyPi', image: ohMyPi },

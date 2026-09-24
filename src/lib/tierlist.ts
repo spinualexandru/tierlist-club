@@ -17,9 +17,8 @@ export interface TierList {
   /**
    * Tier ids shown by default, top to bottom, e.g. ['S', 'A+', 'A', 'B', 'F', 'F-'].
    * Ids without a trailing +/- are permanent; variants can be deleted.
-   * Every option starts in the first tier.
    */
   tiers: string[]
-  /** The items to rank. */
+  /** The items to rank. The list starts empty; they get added from the option picker. */
   options: TierOption[]
 }

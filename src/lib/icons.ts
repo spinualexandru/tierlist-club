@@ -1,8 +1,10 @@
 import downloadIcon from 'lucide-static/icons/download.svg?raw'
+import listPlusIcon from 'lucide-static/icons/list-plus.svg?raw'
 import minusIcon from 'lucide-static/icons/minus.svg?raw'
 import plusIcon from 'lucide-static/icons/plus.svg?raw'
 import rotateCcwIcon from 'lucide-static/icons/rotate-ccw.svg?raw'
 import trashIcon from 'lucide-static/icons/trash-2.svg?raw'
+import xIcon from 'lucide-static/icons/x.svg?raw'
 
 /** Inline a lucide-static SVG, swapping in our own classes. */
 export const lucide = (raw: string, classes: string): string =>
@@ -18,6 +20,18 @@ export const TRASH_ICON = lucide(
   trashIcon,
   'h-7 w-7 sm:h-9 sm:w-9 md:h-11 md:w-11 lg:h-12 lg:w-12 xl:h-14 xl:w-14',
 )
+
+/** Ghost cells after a tier's options: add options, or drop one to delete it. */
+export const ADD_OPTION_ICON = lucide(plusIcon, 'h-7 w-7 sm:h-8 sm:w-8')
+/** Trash can with its lid grouped as `.trash-lid`, so it can swing open. */
+export const DISCARD_ICON = lucide(trashIcon, 'h-7 w-7 sm:h-8 sm:w-8').replace(
+  /<path d="M3 6h18" \/>\s*<path d="M8 6V4[^>]*\/>/,
+  '<g class="trash-lid">$&</g>',
+)
+
+/** Option picker drawer. */
+export const CLOSE_ICON = lucide(xIcon, 'h-5 w-5')
+export const ADD_ALL_ICON = lucide(listPlusIcon, 'h-5 w-5')
 
 /** Floating tier list actions. */
 export const DOWNLOAD_ICON = lucide(downloadIcon, 'h-7 w-7')

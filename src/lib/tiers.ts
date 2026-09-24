@@ -14,37 +14,74 @@ export const baseTierOf = (id: string): string => id.replace(MODIFIERS, '')
 /** Base tiers (no +/- modifier) are permanent; spawned variants can be deleted. */
 export const isBaseTier = (id: string): boolean => id === baseTierOf(id)
 
-/** Fresh state: the given tiers, with every option starting in the first (top) one. */
-export const initialTierState = (tiers: string[], optionIds: string[]): TierState => {
+/** Fresh state: the given tiers, all empty — options get added one by one. */
+export const initialTierState = (tiers: string[]): TierState => {
   const order = [...new Set(tiers)]
-  const first = order[0]
   return {
     order,
-    items: Object.fromEntries(order.map((id) => [id, id === first ? [...optionIds] : []] as const)),
+    items: Object.fromEntries(order.map((id) => [id, []])),
   }
 }
 
+/** Option ids from `optionIds` that aren't in any tier yet, in the given order. */
+export const unrankedOptions = (state: TierState, optionIds: string[]): string[] => {
+  const ranked = new Set(state.order.flatMap((tierId) => state.items[tierId] ?? []))
+  return optionIds.filter((id) => !ranked.has(id))
+}
+
 /**
- * Move an option to a tier, removing it from any other. When `beforeId` is
- * given the option is inserted in front of it, otherwise it is appended.
+ * Move an option to a tier, removing it from any other — or add it, if it
+ * isn't in one yet. When `beforeId` is given the option is inserted in front
+ * of it, otherwise it is appended. Unknown tiers are a no-op, so the option
+ * is never lost.
  */
 export const moveOption = (
   state: TierState,
   id: string,
   to: string,
   beforeId?: string,
-): TierState => ({
-  order: state.order,
-  items: Object.fromEntries(
-    state.order.map((tierId) => {
-      const rest = (state.items[tierId] ?? []).filter((item) => item !== id)
-      if (tierId !== to) return [tierId, rest] as const
-      const at = beforeId ? rest.indexOf(beforeId) : -1
-      if (at === -1) return [tierId, [...rest, id]] as const
-      return [tierId, [...rest.slice(0, at), id, ...rest.slice(at)]] as const
-    }),
-  ),
-})
+): TierState => {
+  if (!state.order.includes(to)) return state
+  return {
+    order: state.order,
+    items: Object.fromEntries(
+      state.order.map((tierId) => {
+        const rest = (state.items[tierId] ?? []).filter((item) => item !== id)
+        if (tierId !== to) return [tierId, rest] as const
+        const at = beforeId ? rest.indexOf(beforeId) : -1
+        if (at === -1) return [tierId, [...rest, id]] as const
+        return [tierId, [...rest.slice(0, at), id, ...rest.slice(at)]] as const
+      }),
+    ),
+  }
+}
+
+/**
+ * Append options that aren't in any tier yet to `to`, in the given order.
+ * Ones that are already ranked stay where they are; unknown tiers are a no-op.
+ */
+export const addOptions = (state: TierState, ids: string[], to: string): TierState => {
+  const fresh = unrankedOptions(state, [...new Set(ids)])
+  if (!state.order.includes(to) || fresh.length === 0) return state
+  return {
+    order: state.order,
+    items: { ...state.items, [to]: [...(state.items[to] ?? []), ...fresh] },
+  }
+}
+
+/** Take an option off the list, making it unranked again. A no-op if it isn't in a tier. */
+export const removeOption = (state: TierState, id: string): TierState => {
+  if (!state.order.some((tierId) => state.items[tierId]?.includes(id))) return state
+  return {
+    order: state.order,
+    items: Object.fromEntries(
+      state.order.map((tierId) => [
+        tierId,
+        (state.items[tierId] ?? []).filter((item) => item !== id),
+      ]),
+    ),
+  }
+}
 
 /** Spawn a `tierId`+`suffix` tier directly above ('+') or below ('-') it. */
 export const spawnTier = (state: TierState, tierId: string, suffix: '+' | '-'): TierState => {

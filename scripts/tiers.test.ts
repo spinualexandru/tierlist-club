@@ -1,20 +1,33 @@
 import assert from 'node:assert/strict'
 import {
   initialTierState,
+  unrankedOptions,
+  addOptions,
   spawnTier,
   deleteTier,
   moveOption,
+  removeOption,
   isBaseTier,
   baseTierOf,
 } from '../src/lib/tiers.ts'
 
 const BASE = ['S', 'A', 'B', 'C', 'D', 'F']
 
-// --- initial state: configured tiers in order, every option in the first one ---
-let s = initialTierState(BASE, ['pi', 'zed', 'claude', 'amp'])
-assert.deepEqual(s.order, BASE)
+/** Fresh state with `optionIds` added to the first tier, in order. */
+const seeded = (tiers: string[], optionIds: string[]) =>
+  optionIds.reduce((state, id) => moveOption(state, id, tiers[0]), initialTierState(tiers))
+
+// --- initial state: configured tiers in order, all empty ---
+const fresh = initialTierState(BASE)
+assert.deepEqual(fresh.order, BASE)
+for (const id of BASE) assert.deepEqual(fresh.items[id], [])
+assert.deepEqual(unrankedOptions(fresh, ['pi', 'zed']), ['pi', 'zed'])
+
+// --- adding options: moving an unranked option places it ---
+let s = seeded(BASE, ['pi', 'zed', 'claude', 'amp'])
 assert.deepEqual(s.items['S'], ['pi', 'zed', 'claude', 'amp'])
 assert.deepEqual(s.items['F'], [])
+assert.deepEqual(unrankedOptions(s, ['amp', 'cline', 'pi', 'warp']), ['cline', 'warp'])
 
 // --- spawn: + on A puts A+ above, - on A puts A- below ---
 s = spawnTier(s, 'A', '+')
@@ -68,9 +81,9 @@ const total = Object.values(s.items).flat().length
 assert.equal(total, 4) // every option still accounted for
 
 // --- configured lists can start with variants, extra letters, and duplicates ---
-let c = initialTierState(['S', 'A+', 'A', 'E', 'F', 'F-', 'F-'], ['x', 'y'])
+let c = seeded(['S', 'A+', 'A', 'E', 'F', 'F-', 'F-'], ['x', 'y'])
 assert.deepEqual(c.order, ['S', 'A+', 'A', 'E', 'F', 'F-'])
-assert.deepEqual(c.items['S'], ['x', 'y']) // options start in the first tier
+assert.deepEqual(c.items['S'], ['x', 'y'])
 assert.ok(isBaseTier('E'))
 c = moveOption(moveOption(c, 'x', 'F-'), 'y', 'F-')
 c = deleteTier(c, 'F-')
@@ -79,19 +92,19 @@ c = deleteTier(c, 'A+')
 assert.deepEqual(c.order, ['S', 'A', 'E', 'F'])
 
 // --- a variant without its base tier folds into its neighbor instead ---
-let v = initialTierState(['S', 'A', 'F+'], ['x', 'y'])
+let v = seeded(['S', 'A', 'F+'], ['x', 'y'])
 v = moveOption(moveOption(v, 'x', 'F+'), 'y', 'F+')
 assert.deepEqual(v.items['F+'], ['x', 'y'])
 v = deleteTier(v, 'F+')
 assert.deepEqual(v.order, ['S', 'A'])
 assert.deepEqual(v.items['A'], ['x', 'y'])
-v = initialTierState(['A-', 'B'], ['x']) // no tier above → folds into the one below
+v = seeded(['A-', 'B'], ['x']) // no tier above → folds into the one below
 v = moveOption(v, 'x', 'A-')
 v = deleteTier(v, 'A-')
 assert.deepEqual(v.items['B'], ['x'])
 
 // --- moving into another tier inserts in front of `beforeId`, leaving its neighbors in order ---
-let m = initialTierState(['A', 'B'], ['1', '2', '3', '4', '5', '6'])
+let m = seeded(['A', 'B'], ['1', '2', '3', '4', '5', '6'])
 for (const id of ['4', '5', '6']) m = moveOption(m, id, 'B')
 m = moveOption(m, '6', 'A', '3')
 assert.deepEqual(m.items['A'], ['1', '2', '6', '3'])
@@ -103,7 +116,32 @@ assert.deepEqual(m.items['A'], ['2', '6', '1', '3', '4'])
 assert.equal(Object.values(m.items).flat().length, 6)
 
 // --- the last remaining tier can't be deleted, even if it's a variant ---
-const lone = initialTierState(['A+'], ['x'])
+const lone = seeded(['A+'], ['x'])
 assert.equal(deleteTier(lone, 'A+'), lone)
+
+// --- moving into a tier that doesn't exist is a no-op, so the option isn't lost ---
+assert.equal(moveOption(lone, 'x', 'B'), lone)
+
+// --- removing takes an option off the list, leaving the rest in order ---
+let r = seeded(['A', 'B'], ['1', '2', '3'])
+r = moveOption(r, '3', 'B')
+r = removeOption(r, '2')
+assert.deepEqual(r.items['A'], ['1'])
+assert.deepEqual(r.items['B'], ['3'])
+assert.deepEqual(unrankedOptions(r, ['1', '2', '3']), ['2'])
+assert.equal(removeOption(r, '2'), r) // already unranked
+assert.equal(removeOption(r, 'missing'), r)
+r = moveOption(r, '2', 'B', '3') // and it can be added back
+assert.deepEqual(r.items['B'], ['2', '3'])
+assert.deepEqual(unrankedOptions(r, ['1', '2', '3']), [])
+
+// --- adding several at once appends the unranked ones in order, leaving ranked ones put ---
+let a = seeded(['A', 'B'], ['1'])
+a = addOptions(a, ['2', '1', '3', '2'], 'B')
+assert.deepEqual(a.items['A'], ['1']) // already ranked, not moved
+assert.deepEqual(a.items['B'], ['2', '3']) // duplicates added once
+assert.equal(addOptions(a, ['1', '2', '3'], 'A'), a) // nothing left to add
+assert.equal(addOptions(a, ['4'], 'C'), a) // unknown tier
+assert.deepEqual(unrankedOptions(a, ['1', '2', '3', '4']), ['4'])
 
 console.log('all tier logic tests passed ✓')

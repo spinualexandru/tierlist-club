@@ -1,4 +1,8 @@
-export type RouteHandler = () => string
+/**
+ * Renders a route. The signal aborts when the route is left, so views can tie
+ * listeners and subscriptions to it.
+ */
+export type RouteHandler = (signal: AbortSignal) => string
 
 export interface Route {
   path: string
@@ -8,6 +12,7 @@ export interface Route {
 export class Router {
   private routes: Route[]
   private outlet: HTMLElement
+  private current?: AbortController
 
   constructor(routes: Route[], outlet: HTMLElement) {
     this.routes = routes
@@ -36,10 +41,13 @@ export class Router {
   }
 
   private render(): void {
+    this.current?.abort()
+    this.current = new AbortController()
+
     const currentPath = window.location.pathname
     const match =
       this.routes.find((r) => r.path === currentPath) ?? this.routes.find((r) => r.path === '*')
 
-    this.outlet.innerHTML = match ? match.view() : html`<h1>404 Not Found</h1>`
+    this.outlet.innerHTML = match ? match.view(this.current.signal) : html`<h1>404 Not Found</h1>`
   }
 }

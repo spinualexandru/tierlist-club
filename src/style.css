@@ -13,6 +13,7 @@
   --color-tier-b: #ffdf80;
   --color-tier-c: #f2f481;
   --color-tier-d: #c1ff80;
+  --color-tier-e: #a0ff80;
   --color-tier-f: #7eff80;
 }
 
@@ -30,6 +31,138 @@ body {
   color: #ffffff;
 }
 
+/* --- Tier list frame --- */
+
+/* Tier colors S → F, shared by the rainbow borders */
+:root {
+  --rainbow-stops:
+    var(--color-tier-s), var(--color-tier-a), var(--color-tier-b), var(--color-tier-c),
+    var(--color-tier-d), var(--color-tier-f);
+}
+
+/* Border running through the tier colors, top to bottom */
+.rainbow-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--color-background), var(--color-background)) padding-box,
+    linear-gradient(to bottom, var(--rainbow-stops)) border-box;
+}
+
+/* Registered so the gradient's start angle can be animated */
+@property --rainbow-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Rainbow border whose colors travel around the element */
+.rainbow-border-spin {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--color-background), var(--color-background)) padding-box,
+    conic-gradient(from var(--rainbow-angle), var(--rainbow-stops), var(--color-tier-s)) border-box;
+  animation: rainbow-spin 4s linear infinite;
+}
+
+@keyframes rainbow-spin {
+  to {
+    --rainbow-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rainbow-border-spin {
+    animation: none;
+  }
+}
+
+/* --- Floating actions (bottom-right of the tier list) --- */
+
+/* Keep the bottom tier's options clear of the actions: their width plus inset and breathing room */
+.tier-row:last-child [data-items] {
+  padding-right: 9.5rem;
+}
+
+/* Fade out of the way while dragging, letting drops land in the tier underneath */
+.floating-actions {
+  transition: opacity 150ms ease-out;
+}
+
+.floating-actions.drag-through {
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* --- Confirm-to-act buttons (reset) --- */
+
+/* Icon twists once when the button arms, and back when it disarms */
+.confirm-action svg {
+  flex-shrink: 0;
+  transition: transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.confirm-action[data-armed] svg {
+  transform: rotate(-360deg);
+}
+
+/* "You sure?" slides out beside the icon while armed */
+.confirm-label {
+  position: relative;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  padding-bottom: 3px;
+  opacity: 0;
+  transform: translateX(-0.5rem);
+  transition:
+    max-width 350ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin 350ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 350ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms ease-out;
+}
+
+.confirm-action[data-armed] .confirm-label {
+  max-width: 6rem;
+  margin-left: 0.5rem;
+  margin-right: 0.25rem;
+  opacity: 1;
+  transform: none;
+  transition-delay: 0ms, 0ms, 80ms, 80ms;
+}
+
+/* Underline that runs out while the button waits for the confirming click */
+.confirm-label::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  border-radius: 1px;
+  background-color: currentColor;
+  opacity: 0.6;
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+.confirm-action[data-armed] .confirm-label::after {
+  animation: confirm-countdown var(--confirm-duration, 3s) linear forwards;
+}
+
+@keyframes confirm-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-action svg,
+  .confirm-label {
+    transition: none;
+  }
+}
+
 /* --- Drag-and-drop feedback --- */
 
 .tier-row {
@@ -39,7 +172,7 @@ body {
     box-shadow 150ms ease-out;
 }
 
-/* Tier highlighted while a provider hovers over it */
+/* Tier highlighted while an option hovers over it */
 .tier-row.drag-over {
   border-color: rgba(255, 255, 255, 0.4);
   background-color: rgba(255, 255, 255, 0.05);
@@ -48,30 +181,35 @@ body {
     0 0 20px rgba(255, 255, 255, 0.12);
 }
 
-/* Source cell while its provider is being dragged */
-.provider-cell.dragging {
+/* Source cell while its option is being dragged */
+.option-cell.dragging {
   opacity: 0.35;
 }
 
-.provider-cell.dragging .provider-chip {
+.option-cell.dragging .option-chip {
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.9),
     0 0 18px 3px rgba(255, 255, 255, 0.35);
 }
 
-/* Cell pop-in when dropped into a tier */
-.provider-cell.dropped {
-  animation: provider-pop-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+/* Source cell while the ghost previews a new spot in its own tier */
+.option-cell.dragging.stepped-aside {
+  display: none;
 }
 
-/* Ghost preview showing where the provider will land */
-.provider-cell.ghost {
+/* Cell pop-in when dropped into a tier */
+.option-cell.dropped {
+  animation: option-pop-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Ghost preview showing where the option will land */
+.option-cell.ghost {
   pointer-events: none;
   opacity: 0.4;
   animation: ghost-fade-in 120ms ease-out;
 }
 
-.provider-cell.ghost .provider-chip {
+.option-cell.ghost .option-chip {
   box-shadow:
     0 0 0 3px rgba(255, 255, 255, 0.6),
     0 0 18px 3px rgba(255, 255, 255, 0.22);
@@ -83,7 +221,7 @@ body {
   }
 }
 
-@keyframes provider-pop-in {
+@keyframes option-pop-in {
   from {
     opacity: 0;
     transform: scale(0.4);

@@ -1,28 +1,34 @@
-/** The six base tiers — always present and impossible to delete. */
-export const MAIN_TIERS = ['S', 'A', 'B', 'C', 'D', 'F'] as const
-
 export interface TierState {
   /** Tier ids in display order, e.g. ['S', 'A+', 'A', 'A-', 'B', …]. */
   order: string[]
-  /** Provider ids per tier id. */
+  /** Option ids per tier id. */
   items: Record<string, string[]>
 }
 
-/** Fresh state: the six base tiers, with every provider starting in F. */
-export const initialTierState = (providerIds: string[]): TierState => ({
-  order: [...MAIN_TIERS],
-  items: Object.fromEntries(
-    MAIN_TIERS.map((letter) => [letter, letter === 'F' ? [...providerIds] : []] as const),
-  ),
-})
+/** Trailing +/- modifiers of a tier id ('A+-' → '+-'). */
+const MODIFIERS = /[+-]+$/
 
-export const isMainTier = (id: string): boolean => (MAIN_TIERS as readonly string[]).includes(id)
+/** Base tier of an id ('A+' → 'A'), which picks its color. */
+export const baseTierOf = (id: string): string => id.replace(MODIFIERS, '')
+
+/** Base tiers (no +/- modifier) are permanent; spawned variants can be deleted. */
+export const isBaseTier = (id: string): boolean => id === baseTierOf(id)
+
+/** Fresh state: the given tiers, with every option starting in the first (top) one. */
+export const initialTierState = (tiers: string[], optionIds: string[]): TierState => {
+  const order = [...new Set(tiers)]
+  const first = order[0]
+  return {
+    order,
+    items: Object.fromEntries(order.map((id) => [id, id === first ? [...optionIds] : []] as const)),
+  }
+}
 
 /**
- * Move a provider to a tier, removing it from any other. When `beforeId` is
- * given the provider is inserted in front of it, otherwise it is appended.
+ * Move an option to a tier, removing it from any other. When `beforeId` is
+ * given the option is inserted in front of it, otherwise it is appended.
  */
-export const moveProvider = (
+export const moveOption = (
   state: TierState,
   id: string,
   to: string,
@@ -51,16 +57,27 @@ export const spawnTier = (state: TierState, tierId: string, suffix: '+' | '-'): 
   }
 }
 
-/** Delete a spawned tier, folding its providers into its closest surviving parent. */
-export const deleteTier = (state: TierState, tierId: string): TierState => {
-  if (isMainTier(tierId) || !state.order.includes(tierId)) return state
-  const orphaned = state.items[tierId] ?? []
-  // Walk up one modifier at a time — always resolves to a base tier in the end.
+/**
+ * Where a deleted tier's options go: its closest surviving ancestor (walking
+ * up one modifier at a time), else the neighboring tier above or below — a
+ * configured variant like 'F+' may have no base 'F' to fall back to.
+ */
+const foldTargetOf = (order: string[], tierId: string): string | undefined => {
   let parent = tierId.slice(0, -1)
-  while (parent && !state.order.includes(parent)) parent = parent.slice(0, -1)
+  while (parent && !order.includes(parent)) parent = parent.slice(0, -1)
+  if (parent) return parent
+  const at = order.indexOf(tierId)
+  return order[at - 1] ?? order[at + 1]
+}
+
+/** Delete a variant tier, folding its options into the tier from `foldTargetOf`. */
+export const deleteTier = (state: TierState, tierId: string): TierState => {
+  if (isBaseTier(tierId) || !state.order.includes(tierId)) return state
+  const target = foldTargetOf(state.order, tierId)
+  if (!target) return state // the only tier left — its options have nowhere to go
   const items = { ...state.items }
   delete items[tierId]
-  if (parent) items[parent] = [...(items[parent] ?? []), ...orphaned]
+  items[target] = [...(items[target] ?? []), ...(state.items[tierId] ?? [])]
   return {
     order: state.order.filter((id) => id !== tierId),
     items,

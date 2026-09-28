@@ -3,14 +3,16 @@ import { atom, type WritableAtom } from 'nanostores'
 import { themeClass } from '../theme'
 import actionButton from '../components/action-button'
 import optionPicker, { optionPickerItems, type OptionsStatus } from '../components/option-picker'
+import shareDialog from '../components/share-dialog'
 import siteHeader from '../components/site-header'
 import tier from '../components/tier'
 import { track } from '../lib/analytics'
 import { squareSide } from '../lib/export-size'
 import { genie } from '../lib/genie'
-import { DOWNLOAD_ICON, RESET_ICON } from '../lib/icons'
+import { DOWNLOAD_ICON, RESET_ICON, SHARE_ICON } from '../lib/icons'
+import { decodeSelections, sharePath } from '../lib/share'
 import { searchOptions, type TierList, type TierOption } from '../lib/tierlist'
-import { defaultTierList, tierLists } from '../tierlists'
+import { tierListPath, tierLists } from '../tierlists'
 import { mountSiteHeader } from './site-header'
 import {
   initialTierState,
@@ -33,10 +35,14 @@ const loadedOptions = new Map<string, TierOption[]>()
 
 const initialStateOf = (list: TierList): TierState => initialTierState(list.tiers)
 
-const tierStateOf = (list: TierList): WritableAtom<TierState> => {
+/** A list's state, created from `initial` the first time it's asked for. */
+const tierStateOf = (
+  list: TierList,
+  initial: TierState = initialStateOf(list),
+): WritableAtom<TierState> => {
   let state = tierStates.get(list.id)
   if (!state) {
-    state = atom(initialStateOf(list))
+    state = atom(initial)
     tierStates.set(list.id, state)
     // A list is started when its first option goes in, including again after a reset.
     // The atom lives as long as the page, so this listener does too.
@@ -46,6 +52,38 @@ const tierStateOf = (list: TierList): WritableAtom<TierState> => {
     })
   }
   return state
+}
+
+/** A list's options, loading (and keeping) them if it loads its own. */
+const optionsOf = async (list: TierList): Promise<TierOption[]> => {
+  if (Array.isArray(list.options)) return list.options
+  const options = loadedOptions.get(list.id) ?? (await Effect.runPromise(list.options))
+  loadedOptions.set(list.id, options)
+  return options
+}
+
+/**
+ * Fill a list in from a shared link's `selections`, loading its options first
+ * to check them against. False (leaving the list as it was) if they're invalid
+ * or the options fail to load. A shared list doesn't count as started.
+ */
+export const openShared = async (list: TierList, selections: string): Promise<boolean> => {
+  let options: TierOption[]
+  try {
+    options = await optionsOf(list)
+  } catch (error) {
+    console.error(`Failed to load the options of ${list.id}`, error)
+    return false
+  }
+  const shared = decodeSelections(
+    selections,
+    list.tiers,
+    options.map((option) => option.id),
+  )
+  if (!shared) return false
+  if (tierStates.has(list.id)) tierStateOf(list).set(shared)
+  else tierStateOf(list, shared)
+  return true
 }
 
 const tiersHtml = (state: TierState, optionsById: Map<string, TierOption>): string =>
@@ -368,6 +406,63 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
         event.preventDefault()
         search.value = ''
         search.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+    },
+    { signal },
+  )
+
+  // Share: a dialog with a link to the list as it's ranked now, and a button copying it.
+  const COPIED_MS = 2000
+  let copiedTimer: ReturnType<typeof setTimeout> | undefined
+  signal.addEventListener('abort', () => clearTimeout(copiedTimer), { once: true })
+  const shareDialogOf = () => app.querySelector<HTMLDialogElement>('[data-share-dialog]')
+
+  const openShareDialog = () => {
+    const dialog = shareDialogOf()
+    if (!dialog) return
+    const state = tierState.get()
+    const url = hasRankedOptions(state) ? location.origin + sharePath(list.id, state) : null
+    dialog.innerHTML = shareDialog({ url })
+    dialog.showModal()
+    dialog.querySelector<HTMLElement>('[data-share-copy]')?.focus()
+  }
+
+  const copyShareLink = async (button: HTMLElement) => {
+    const field = shareDialogOf()?.querySelector<HTMLInputElement>('[data-share-url]')
+    if (!field) return
+    try {
+      await navigator.clipboard.writeText(field.value)
+    } catch {
+      // No clipboard access (e.g. an insecure origin): select the link to copy by hand.
+      field.focus()
+      field.select()
+      return
+    }
+    clearTimeout(copiedTimer)
+    button.toggleAttribute('data-copied', true)
+    button.setAttribute('aria-label', 'Link copied')
+    const label = button.querySelector('[data-share-copy-label]')
+    if (label) label.textContent = 'Copied'
+    copiedTimer = setTimeout(() => {
+      button.toggleAttribute('data-copied', false)
+      button.setAttribute('aria-label', 'Copy link')
+      if (label) label.textContent = 'Copy'
+    }, COPIED_MS)
+  }
+
+  app.addEventListener(
+    'click',
+    (event) => {
+      if (!(event.target instanceof Element)) return
+      if (event.target.closest('[data-share]')) return openShareDialog()
+      const copy = event.target.closest<HTMLElement>('[data-share-copy]')
+      if (copy) return void copyShareLink(copy)
+      // Close on the X, or on a click on the backdrop, which targets the dialog itself.
+      if (
+        event.target.closest('[data-share-close]') ||
+        event.target.matches('[data-share-dialog]')
+      ) {
+        shareDialogOf()?.close()
       }
     },
     { signal },
@@ -715,7 +810,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     <div class="${themeClass} flex-col">
       ${siteHeader({
         links: tierLists.map((other) => ({
-          href: other === defaultTierList ? '/' : `/${other.id}`,
+          href: tierListPath(other),
           label: other.label,
           title: other.name,
           active: other.id === list.id,
@@ -742,6 +837,12 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
             confirmLabel: 'You sure?',
           })}
           ${actionButton({
+            action: 'share',
+            label: 'Share link',
+            icon: SHARE_ICON,
+            frame: 'border border-brand bg-background',
+          })}
+          ${actionButton({
             action: 'export',
             label: 'Save as PNG',
             icon: DOWNLOAD_ICON,
@@ -753,6 +854,11 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
         data-picker
         aria-labelledby="option-picker-title"
         class="option-picker scheme-dark m-0 left-auto right-0 h-dvh max-h-dvh w-80 sm:w-96 max-w-[85vw] p-0 border-0 border-l border-white/10 bg-neutral-900 text-white shadow-2xl shadow-black/60"
+      ></dialog>
+      <dialog
+        data-share-dialog
+        aria-labelledby="share-dialog-title"
+        class="share-dialog scheme-dark m-auto w-[32rem] max-w-[calc(100vw-2rem)] p-0 rounded-2xl border border-white/10 bg-neutral-900 text-white shadow-2xl shadow-black/60"
       ></dialog>
     </div>
   `

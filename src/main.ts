@@ -4,4 +4,4 @@ import render from './views'
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 
-render(app)
+void render(app)

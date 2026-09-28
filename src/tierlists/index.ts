@@ -6,3 +6,7 @@ import { models } from './models'
 export const tierLists: TierList[] = [harnesses, models]
 
 export const defaultTierList = tierLists[0]
+
+/** Where a tier list is served: `/` for the default one, `/<id>` for the rest. */
+export const tierListPath = (list: TierList): string =>
+  list === defaultTierList ? '/' : `/${list.id}`

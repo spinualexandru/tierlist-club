@@ -1,3 +1,5 @@
+import checkIcon from 'lucide-static/icons/check.svg?raw'
+import copyIcon from 'lucide-static/icons/copy.svg?raw'
 import downloadIcon from 'lucide-static/icons/download.svg?raw'
 import listPlusIcon from 'lucide-static/icons/list-plus.svg?raw'
 import loaderCircleIcon from 'lucide-static/icons/loader-circle.svg?raw'
@@ -6,6 +8,7 @@ import plusIcon from 'lucide-static/icons/plus.svg?raw'
 import refreshCwIcon from 'lucide-static/icons/refresh-cw.svg?raw'
 import rotateCcwIcon from 'lucide-static/icons/rotate-ccw.svg?raw'
 import searchIcon from 'lucide-static/icons/search.svg?raw'
+import share2Icon from 'lucide-static/icons/share-2.svg?raw'
 import trashIcon from 'lucide-static/icons/trash-2.svg?raw'
 import xIcon from 'lucide-static/icons/x.svg?raw'
 
@@ -45,3 +48,14 @@ export const RETRY_ICON = lucide(refreshCwIcon, 'h-4 w-4')
 /** Floating tier list actions. */
 export const DOWNLOAD_ICON = lucide(downloadIcon, 'h-7 w-7')
 export const RESET_ICON = lucide(rotateCcwIcon, 'h-7 w-7')
+export const SHARE_ICON = lucide(share2Icon, 'h-7 w-7')
+
+/** Share dialog: the copy button swaps its icon for a check once the link is copied. */
+export const COPY_ICON = lucide(copyIcon, 'h-4 w-4 group-data-copied:hidden')
+export const COPIED_ICON = lucide(checkIcon, 'h-4 w-4 hidden group-data-copied:block')
+
+/** Full-screen loader, e.g. while a shared tier list's options load. */
+export const PAGE_LOADING_ICON = lucide(
+  loaderCircleIcon,
+  'h-10 w-10 animate-spin motion-reduce:animate-none',
+)

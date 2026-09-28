@@ -39,6 +39,7 @@ import zed from '../assets/logos/zed.svg'
 export const harnesses: TierList = {
   id: 'harnesses',
   name: 'AI harnesses',
+  label: 'Harness',
   tiers: ['S', 'A', 'B', 'C', 'D', 'F'],
   options: [
     { id: 'amp', name: 'Amp', image: amp },

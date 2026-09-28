@@ -1,0 +1,13 @@
+# Cloudflare static asset headers (https://developers.cloudflare.com/workers/static-assets/headers/).
+# Headers from every matching rule are combined, so Cache-Control is only set once per path.
+# index.html keeps the default `public, max-age=0, must-revalidate` with an ETag, so a
+# deploy shows up on the next load.
+
+# Vite puts a content hash in every file name here, so they never change.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY

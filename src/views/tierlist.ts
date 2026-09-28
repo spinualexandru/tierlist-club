@@ -10,7 +10,7 @@ import { track } from '../lib/analytics'
 import { squareSide } from '../lib/export-size'
 import { genie } from '../lib/genie'
 import { DOWNLOAD_ICON, RESET_ICON, SHARE_ICON } from '../lib/icons'
-import { decodeSelections, sharePath } from '../lib/share'
+import { decodeSelections, encodeSelections, sharePath } from '../lib/share'
 import { searchOptions, type TierList, type TierOption } from '../lib/tierlist'
 import { tierListPath, tierLists } from '../tierlists'
 import { mountSiteHeader } from './site-header'
@@ -421,7 +421,9 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     const dialog = shareDialogOf()
     if (!dialog) return
     const state = tierState.get()
-    const url = hasRankedOptions(state) ? location.origin + sharePath(list.id, state) : null
+    const url = hasRankedOptions(state)
+      ? location.origin + sharePath(list.id, encodeSelections(state, list.tiers, optionIds))
+      : null
     dialog.innerHTML = shareDialog({ url })
     dialog.showModal()
     dialog.querySelector<HTMLElement>('[data-share-copy]')?.focus()

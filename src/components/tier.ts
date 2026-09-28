@@ -1,4 +1,5 @@
 import { ADD_OPTION_ICON, DISCARD_ICON, MINUS_ICON, PLUS_ICON, TRASH_ICON } from '../lib/icons'
+import { escapeHtml } from '../lib/render'
 import type { TierOption } from '../lib/tierlist'
 import { baseTierOf, isBaseTier } from '../lib/tiers'
 
@@ -144,32 +145,37 @@ export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: T
         class="md:flex-1 flex flex-wrap content-center items-start gap-3 sm:gap-4 px-3 sm:px-6 py-3 text-white"
       >
         ${items
-          .map(
-            (option) => html`
+          .map(({ id, name, image, monochrome }) => {
+            // Options can come from an API, so their fields are escaped.
+            const optionName = escapeHtml(name)
+            // The label (w-0 min-w-full) wraps at the chip's width instead of widening the cell.
+            return html`
               <div
-                data-option="${option.id}"
+                data-option="${escapeHtml(id)}"
                 draggable="true"
-                title="${option.name}"
+                title="${optionName}"
                 class="option-cell group flex flex-col items-center gap-1.5 shrink-0 hover:scale-110 transition duration-150 ease-out cursor-grab active:cursor-grabbing select-none"
               >
                 <div
                   class="option-chip rounded-xl bg-white/5 group-hover:bg-white/15 p-1.5 sm:p-2 transition duration-150 ease-out"
                 >
                   <img
-                    src="${option.image}"
-                    alt="${option.name}"
+                    src="${escapeHtml(image)}"
+                    alt="${optionName}"
                     draggable="false"
-                    class="h-15 w-15 sm:h-17.5 sm:w-17.5 md:h-18 md:w-18 object-contain"
+                    class="h-15 w-15 sm:h-17.5 sm:w-17.5 md:h-18 md:w-18 object-contain ${
+                      monochrome ? 'invert' : ''
+                    }"
                   />
                 </div>
                 <span
-                  class="text-xs sm:text-sm leading-tight font-medium text-center text-white/70"
+                  class="w-0 min-w-full text-xs sm:text-sm leading-tight font-medium text-center text-balance wrap-break-word text-white/70"
                 >
-                  ${option.name}
+                  ${optionName}
                 </span>
               </div>
-            `,
-          )
+            `
+          })
           .join('')}
         ${addOptionCell(props.id)} ${trashCell()}
       </div>

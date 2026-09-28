@@ -49,6 +49,11 @@ body {
     linear-gradient(to bottom, var(--rainbow-stops)) border-box;
 }
 
+/* Fill running through the tier colors, top to bottom, e.g. the header's active list */
+.rainbow-fill {
+  background: linear-gradient(to bottom, var(--rainbow-stops));
+}
+
 /* Registered so the gradient's start angle can be animated */
 @property --rainbow-angle {
   syntax: '<angle>';

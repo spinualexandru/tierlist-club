@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@opencode-ai/models": "^0.0.87",
+    "effect": "4.0.0-rc.117",
     "html-to-image": "^1.11.13",
     "lucide-static": "^1.48.0",
     "nanostores": "^1.5.4"

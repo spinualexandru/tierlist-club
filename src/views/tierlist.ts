@@ -1,11 +1,16 @@
+import { Effect } from 'effect'
 import { atom, type WritableAtom } from 'nanostores'
 import { themeClass } from '../theme'
 import actionButton from '../components/action-button'
-import optionPicker, { optionPickerItems } from '../components/option-picker'
+import optionPicker, { optionPickerItems, type OptionsStatus } from '../components/option-picker'
+import siteHeader from '../components/site-header'
 import tier from '../components/tier'
+import { squareSide } from '../lib/export-size'
 import { genie } from '../lib/genie'
 import { DOWNLOAD_ICON, RESET_ICON } from '../lib/icons'
 import { searchOptions, type TierList, type TierOption } from '../lib/tierlist'
+import { defaultTierList, tierLists } from '../tierlists'
+import { mountSiteHeader } from './site-header'
 import {
   initialTierState,
   addOptions,
@@ -19,6 +24,9 @@ import {
 
 /** Option placement per tier, per tier list id — kept while navigating between lists. */
 const tierStates = new Map<string, WritableAtom<TierState>>()
+
+/** Options of tier lists that load theirs, once loaded — so they're only fetched once. */
+const loadedOptions = new Map<string, TierOption[]>()
 
 const initialStateOf = (list: TierList): TierState => initialTierState(list.tiers)
 
@@ -64,6 +72,12 @@ const glide = (el: HTMLElement, from: DOMRect) => {
 /** Delay between options popping in together, e.g. after "Add all". */
 const POP_STAGGER_MS = 25
 
+/** Smallest side of the (square) PNG export, in CSS pixels. */
+const MIN_EXPORT_SIDE = 480
+
+/** Background margin around the tier list in the PNG export, in CSS pixels. */
+const EXPORT_MARGIN = 32
+
 /** The trash can's gulp once a deleted option is in, fading it out. */
 const GULP_DURATION_MS = 320
 
@@ -73,8 +87,14 @@ const TIER_LIST_FRAME = ''
 
 export default function (app: HTMLDivElement, list: TierList, signal: AbortSignal) {
   const tierState = tierStateOf(list)
-  const optionsById = new Map(list.options.map((option) => [option.id, option] as const))
-  const optionIds = list.options.map((option) => option.id)
+  let optionsStatus: OptionsStatus = 'loading'
+  let optionsById = new Map<string, TierOption>()
+  let optionIds: string[] = []
+  const setOptions = (options: TierOption[]) => {
+    optionsById = new Map(options.map((option) => [option.id, option] as const))
+    optionIds = options.map((option) => option.id)
+    optionsStatus = 'ready'
+  }
   const unrankedOf = (state: TierState): TierOption[] =>
     unrankedOptions(state, optionIds).flatMap((id) => optionsById.get(id) ?? [])
 
@@ -166,15 +186,24 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
   // Option picker: the drawer a tier's "+" cell opens, listing the options not on the list yet.
   let pickerTier: string | null = null
   let pickerQuery = ''
+  /** Whether the list's picker filter is on; it starts on, and stays as set while the list is open. */
+  let pickerFiltered = true
   const pickerOf = () => app.querySelector<HTMLDialogElement>('[data-picker]')
-  /** Options the picker shows: not on the list yet, and matching the search. */
-  const pickableOf = (state: TierState): TierOption[] =>
-    searchOptions(unrankedOf(state), pickerQuery)
+  const pickerFilterOf = () =>
+    list.pickerFilter && { label: list.pickerFilter.label, checked: pickerFiltered }
+  /** Options the picker shows: not on the list yet, kept by the filter, and matching the search. */
+  const pickableOf = (state: TierState): TierOption[] => {
+    const filter = pickerFiltered ? list.pickerFilter : undefined
+    const unranked = unrankedOf(state)
+    return searchOptions(filter ? unranked.filter(filter.keep) : unranked, pickerQuery)
+  }
   const pickerItemsOf = (tierId: string, state: TierState): string =>
     optionPickerItems({
       tier: tierId,
       options: pickableOf(state),
       searching: pickerQuery.trim() !== '',
+      status: optionsStatus,
+      filter: pickerFilterOf(),
     })
 
   const openPicker = (tierId: string) => {
@@ -182,7 +211,12 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     if (!picker) return
     pickerTier = tierId
     pickerQuery = ''
-    picker.innerHTML = optionPicker({ tier: tierId, options: unrankedOf(tierState.get()) })
+    picker.innerHTML = optionPicker({
+      tier: tierId,
+      options: pickableOf(tierState.get()),
+      status: optionsStatus,
+      filter: pickerFilterOf(),
+    })
     picker.showModal()
     // Straight into the search with a keyboard at hand, but no on-screen keyboard popping up on touch.
     if (matchMedia('(pointer: fine)').matches) {
@@ -206,7 +240,11 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
 
     const picks = () => [...items.querySelectorAll<HTMLElement>('[data-pick]')]
     const focused = picks().findIndex((pick) => pick === document.activeElement)
+    const hadFocus = items.contains(document.activeElement)
     items.innerHTML = pickerItemsOf(pickerTier, state)
+    // E.g. "Try again", which the spinner replaces: hand focus back to the search.
+    if (focused === -1 && hadFocus)
+      picker.querySelector<HTMLElement>('[data-picker-search]')?.focus()
     if (focused === -1) return
     const next = picks()
     const target =
@@ -216,12 +254,41 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
   }
   signal.addEventListener('abort', tierState.listen(refreshPicker), { once: true })
 
+  // Lists that load their options start fetching them right away, so they're
+  // usually there by the time the picker opens; until then it shows a spinner.
+  const loadOptions = async (load: Effect.Effect<TierOption[], unknown>) => {
+    optionsStatus = 'loading'
+    refreshPicker(tierState.get())
+    try {
+      const options = await Effect.runPromise(load, { signal })
+      loadedOptions.set(list.id, options)
+      setOptions(options)
+    } catch (error) {
+      if (signal.aborted) return
+      console.error(`Failed to load the options of ${list.id}`, error)
+      optionsStatus = 'failed'
+    }
+    refreshPicker(tierState.get())
+  }
+
+  if (Array.isArray(list.options)) setOptions(list.options)
+  else {
+    const loaded = loadedOptions.get(list.id)
+    if (loaded) setOptions(loaded)
+    else void loadOptions(list.options)
+  }
+
   app.addEventListener(
     'click',
     (event) => {
       if (!(event.target instanceof Element)) return
       const add = event.target.closest<HTMLElement>('[data-add-option]')
       if (add?.dataset.addOption) return openPicker(add.dataset.addOption)
+
+      if (event.target.closest('[data-picker-retry]') && !Array.isArray(list.options)) {
+        void loadOptions(list.options)
+        return
+      }
 
       // Picking keeps the drawer open, so several options can go into the tier in a row;
       // "Add all" leaves nothing to pick, so it closes the drawer as they pop in.
@@ -263,6 +330,22 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     { signal },
   )
 
+  // The list's filter checkbox narrows the grid down too.
+  app.addEventListener(
+    'change',
+    (event) => {
+      const checkbox = event.target
+      if (!(checkbox instanceof HTMLInputElement) || !checkbox.matches('[data-picker-filter]'))
+        return
+      const items = pickerOf()?.querySelector<HTMLElement>('[data-picker-items]')
+      if (!items || !pickerTier) return
+      pickerFiltered = checkbox.checked
+      items.innerHTML = pickerItemsOf(pickerTier, tierState.get())
+      items.scrollTop = 0
+    },
+    { signal },
+  )
+
   // Enter in the search adds the first match; Escape clears the search before closing the drawer.
   app.addEventListener(
     'keydown',
@@ -290,6 +373,25 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     el.addEventListener('animationend', () => el.remove(), { once: true })
   }
 
+  /**
+   * An off-screen copy of the tier list to capture, so it can be re-laid out
+   * without the page moving: no ghost "+" and trash cells, no pop-in animation
+   * (a fresh copy would replay it from invisible), and its natural height.
+   * Remove its `host` when done.
+   */
+  const exportCopyOf = (node: HTMLElement) => {
+    const host = document.createElement('div')
+    host.setAttribute('aria-hidden', 'true')
+    host.style.cssText = 'position: fixed; top: 0; left: -100000px;'
+    const copy = node.cloneNode(true) as HTMLElement
+    for (const el of copy.querySelectorAll('[data-add-option], [data-trash]')) el.remove()
+    for (const el of copy.querySelectorAll('.dropped')) el.classList.remove('dropped')
+    copy.style.height = 'auto'
+    host.append(copy)
+    document.body.append(host)
+    return { host, copy }
+  }
+
   // Capture the whole tier list (including rows scrolled out of view) as a PNG download.
   let exporting = false
   const exportPng = async () => {
@@ -299,14 +401,31 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     try {
       flash()
       const { toPng } = await import('html-to-image')
-      const dataUrl = await toPng(node, {
-        pixelRatio: 2,
-        backgroundColor: '#111111',
-        width: node.scrollWidth,
-        height: node.scrollHeight,
-        // Leave out the ghost "+" and trash cells.
-        filter: (el) => !(el instanceof Element && el.matches('[data-add-option], [data-trash]')),
-      })
+      const { host, copy } = exportCopyOf(node)
+      let dataUrl: string
+      try {
+        // A square: a sparse list widens to its height, a crowded one wraps its rows until it fits.
+        const side = squareSide(
+          (width) => {
+            copy.style.width = `${width}px`
+            return copy.scrollHeight
+          },
+          MIN_EXPORT_SIDE,
+          node.scrollWidth,
+        )
+        // The rows stretch to fill the square's height.
+        Object.assign(copy.style, { width: `${side}px`, height: `${side}px` })
+        dataUrl = await toPng(copy, {
+          pixelRatio: 2,
+          backgroundColor: '#111111',
+          width: side + 2 * EXPORT_MARGIN,
+          height: side + 2 * EXPORT_MARGIN,
+          // `width`/`height` above size the image, with a margin around the tier list.
+          style: { width: `${side}px`, height: `${side}px`, margin: `${EXPORT_MARGIN}px` },
+        })
+      } finally {
+        host.remove()
+      }
       const link = document.createElement('a')
       link.download = `${list.id}.png`
       link.href = dataUrl
@@ -578,9 +697,21 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     { signal },
   )
 
+  document.title = `${list.name} · tierlist.club`
+  // The router mounts the returned markup synchronously, so it's in place by this microtask.
+  queueMicrotask(() => mountSiteHeader(app, signal))
+
   return html`
-    <div class="${themeClass}">
-      <div class="relative flex-1 min-w-0 h-full">
+    <div class="${themeClass} flex-col">
+      ${siteHeader({
+        links: tierLists.map((other) => ({
+          href: other === defaultTierList ? '/' : `/${other.id}`,
+          label: other.label,
+          title: other.name,
+          active: other.id === list.id,
+        })),
+      })}
+      <div class="relative flex-1 min-w-0 min-h-0">
         <div
           data-tiers
           class="${TIER_LIST_FRAME} flex flex-col w-full h-full rounded-2xl md:rounded-3xl overflow-x-hidden overflow-y-auto divide-y divide-tier-border shadow-2xl"

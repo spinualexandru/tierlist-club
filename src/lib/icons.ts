@@ -3,6 +3,7 @@ import listPlusIcon from 'lucide-static/icons/list-plus.svg?raw'
 import minusIcon from 'lucide-static/icons/minus.svg?raw'
 import plusIcon from 'lucide-static/icons/plus.svg?raw'
 import rotateCcwIcon from 'lucide-static/icons/rotate-ccw.svg?raw'
+import searchIcon from 'lucide-static/icons/search.svg?raw'
 import trashIcon from 'lucide-static/icons/trash-2.svg?raw'
 import xIcon from 'lucide-static/icons/x.svg?raw'
 
@@ -32,6 +33,7 @@ export const DISCARD_ICON = lucide(trashIcon, 'h-7 w-7 sm:h-8 sm:w-8').replace(
 /** Option picker drawer. */
 export const CLOSE_ICON = lucide(xIcon, 'h-5 w-5')
 export const ADD_ALL_ICON = lucide(listPlusIcon, 'h-5 w-5')
+export const SEARCH_ICON = lucide(searchIcon, 'h-4 w-4')
 
 /** Floating tier list actions. */
 export const DOWNLOAD_ICON = lucide(downloadIcon, 'h-7 w-7')

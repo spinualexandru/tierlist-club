@@ -5,7 +5,7 @@ import optionPicker, { optionPickerItems } from '../components/option-picker'
 import tier from '../components/tier'
 import { genie } from '../lib/genie'
 import { DOWNLOAD_ICON, RESET_ICON } from '../lib/icons'
-import type { TierList, TierOption } from '../lib/tierlist'
+import { searchOptions, type TierList, type TierOption } from '../lib/tierlist'
 import {
   initialTierState,
   addOptions,
@@ -165,14 +165,29 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
 
   // Option picker: the drawer a tier's "+" cell opens, listing the options not on the list yet.
   let pickerTier: string | null = null
+  let pickerQuery = ''
   const pickerOf = () => app.querySelector<HTMLDialogElement>('[data-picker]')
+  /** Options the picker shows: not on the list yet, and matching the search. */
+  const pickableOf = (state: TierState): TierOption[] =>
+    searchOptions(unrankedOf(state), pickerQuery)
+  const pickerItemsOf = (tierId: string, state: TierState): string =>
+    optionPickerItems({
+      tier: tierId,
+      options: pickableOf(state),
+      searching: pickerQuery.trim() !== '',
+    })
 
   const openPicker = (tierId: string) => {
     const picker = pickerOf()
     if (!picker) return
     pickerTier = tierId
+    pickerQuery = ''
     picker.innerHTML = optionPicker({ tier: tierId, options: unrankedOf(tierState.get()) })
     picker.showModal()
+    // Straight into the search with a keyboard at hand, but no on-screen keyboard popping up on touch.
+    if (matchMedia('(pointer: fine)').matches) {
+      picker.querySelector<HTMLElement>('[data-picker-search]')?.focus()
+    }
     // Picks re-render the tier, replacing the "+" that opened the picker, so the
     // dialog can't hand focus back to it by itself.
     picker.addEventListener(
@@ -191,7 +206,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
 
     const picks = () => [...items.querySelectorAll<HTMLElement>('[data-pick]')]
     const focused = picks().findIndex((pick) => pick === document.activeElement)
-    items.innerHTML = optionPickerItems({ tier: pickerTier, options: unrankedOf(state) })
+    items.innerHTML = pickerItemsOf(pickerTier, state)
     if (focused === -1) return
     const next = picks()
     const target =
@@ -215,7 +230,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       if ((pick?.dataset.pick || pickAll) && pickerTier) {
         const ids = pick?.dataset.pick
           ? [pick.dataset.pick]
-          : unrankedOptions(tierState.get(), optionIds)
+          : pickableOf(tierState.get()).map((option) => option.id)
         const next = addOptions(tierState.get(), ids, pickerTier)
         if (next !== tierState.get()) {
           poppingIds = new Set(ids)
@@ -228,6 +243,39 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       // Close on the X, or on a click on the backdrop, which targets the dialog itself.
       if (event.target.closest('[data-picker-close]') || event.target.matches('[data-picker]')) {
         pickerOf()?.close()
+      }
+    },
+    { signal },
+  )
+
+  // Search narrows the picker's grid down as you type.
+  app.addEventListener(
+    'input',
+    (event) => {
+      const search = event.target
+      if (!(search instanceof HTMLInputElement) || !search.matches('[data-picker-search]')) return
+      const items = pickerOf()?.querySelector<HTMLElement>('[data-picker-items]')
+      if (!items || !pickerTier) return
+      pickerQuery = search.value
+      items.innerHTML = pickerItemsOf(pickerTier, tierState.get())
+      items.scrollTop = 0
+    },
+    { signal },
+  )
+
+  // Enter in the search adds the first match; Escape clears the search before closing the drawer.
+  app.addEventListener(
+    'keydown',
+    (event) => {
+      const search = event.target
+      if (!(search instanceof HTMLInputElement) || !search.matches('[data-picker-search]')) return
+      if (event.key === 'Enter' && !event.isComposing) {
+        event.preventDefault()
+        pickerOf()?.querySelector<HTMLElement>('[data-pick]')?.click()
+      } else if (event.key === 'Escape' && search.value) {
+        event.preventDefault()
+        search.value = ''
+        search.dispatchEvent(new Event('input', { bubbles: true }))
       }
     },
     { signal },

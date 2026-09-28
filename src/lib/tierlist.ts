@@ -22,3 +22,19 @@ export interface TierList {
   /** The items to rank. The list starts empty; they get added from the option picker. */
   options: TierOption[]
 }
+
+/** Lowercase, without accents, spaces, or punctuation, so "kilocode" finds "Kilo Code". */
+const searchKey = (text: string): string =>
+  text
+    .normalize('NFD')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, '')
+
+/** Options whose name or id contains `query`, in their original order; all of them for a blank query. */
+export const searchOptions = (options: TierOption[], query: string): TierOption[] => {
+  const key = searchKey(query)
+  if (!key) return options
+  return options.filter(
+    (option) => searchKey(option.name).includes(key) || searchKey(option.id).includes(key),
+  )
+}

@@ -1,20 +1,32 @@
-import { ADD_ALL_ICON, CLOSE_ICON } from '../lib/icons'
+import { ADD_ALL_ICON, CLOSE_ICON, SEARCH_ICON } from '../lib/icons'
 import type { TierOption } from '../lib/tierlist'
 import { tierColorClass } from './tier'
 
 export interface OptionPickerProps {
   /** Tier id the picked options get added to. */
   tier: string
-  /** Options that aren't on the list yet. */
+  /** Options that aren't on the list yet and match the search. */
   options: TierOption[]
+  /** Whether a search is narrowing `options` down. */
+  searching?: boolean
 }
 
 /**
  * The picker's option grid with an "Add all" footer (`data-pick-all`), or a
- * note once everything is on the list. The view re-renders just this into
- * `data-picker-items` after each pick, so the grid keeps its scroll position.
+ * note once nothing is left to pick. The view re-renders just this into
+ * `data-picker-items` after each pick or search, so the grid keeps its scroll
+ * position and the search field keeps its focus.
  */
-export const optionPickerItems = ({ tier, options }: OptionPickerProps): string => {
+export const optionPickerItems = ({ tier, options, searching }: OptionPickerProps): string => {
+  if (options.length === 0 && searching) {
+    return html`
+      <div class="h-full flex flex-col items-center justify-center gap-1.5 px-6 text-center">
+        <p class="text-sm font-medium text-white/70">No matches</p>
+        <p class="text-xs text-white/45">Nothing left to add goes by that name.</p>
+      </div>
+    `
+  }
+
   if (options.length === 0) {
     return html`
       <div class="h-full flex flex-col items-center justify-center gap-1.5 px-6 text-center">
@@ -62,7 +74,7 @@ export const optionPickerItems = ({ tier, options }: OptionPickerProps): string 
         <button
           type="button"
           data-pick-all
-          aria-label="Add all ${options.length} options to tier ${tier}"
+          aria-label="Add all ${options.length}${searching ? ' matching' : ''} options to tier ${tier}"
           class="${tierColorClass(
             tier,
           )} w-full m-0 inline-flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold text-tier-text cursor-pointer select-none hover:brightness-110 active:scale-[0.98] transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
@@ -79,9 +91,10 @@ export const optionPickerItems = ({ tier, options }: OptionPickerProps): string 
 
 /**
  * Contents of the option picker drawer (the view's `<dialog data-picker>`): a
- * header naming the tier, and every option not on the list yet. Picking one
- * (`data-pick`) adds it to the tier, "Add all" (`data-pick-all`) adds every
- * one of them, and `data-picker-close` closes the drawer.
+ * header naming the tier, a search field (`data-picker-search`), and every
+ * option not on the list yet that matches it. Picking one (`data-pick`) adds it
+ * to the tier, "Add all" (`data-pick-all`) adds every one shown, and
+ * `data-picker-close` closes the drawer.
  */
 export default function optionPicker({ tier, options }: OptionPickerProps): string {
   return html`
@@ -106,7 +119,25 @@ export default function optionPicker({ tier, options }: OptionPickerProps): stri
           ${CLOSE_ICON}
         </button>
       </header>
-      <div data-picker-items class="flex-1 overflow-y-auto">
+      <div class="px-4 py-3 sm:px-5 border-b border-white/10">
+        <label
+          class="flex items-center gap-2 h-10 px-3 rounded-xl bg-white/5 text-white/45 focus-within:bg-white/10 focus-within:text-white/70 focus-within:outline-2 focus-within:outline-white transition duration-150 ease-out"
+        >
+          ${SEARCH_ICON}
+          <input
+            type="search"
+            data-picker-search
+            placeholder="Search options"
+            aria-label="Search options"
+            aria-controls="option-picker-items"
+            autocomplete="off"
+            spellcheck="false"
+            enterkeyhint="done"
+            class="flex-1 min-w-0 m-0 p-0 border-0 bg-transparent text-sm text-white placeholder:text-white/45 outline-none"
+          />
+        </label>
+      </div>
+      <div id="option-picker-items" data-picker-items class="flex-1 overflow-y-auto">
         ${optionPickerItems({ tier, options })}
       </div>
     </div>

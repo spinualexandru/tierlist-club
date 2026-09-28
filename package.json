@@ -13,9 +13,10 @@
     "fmt:check": "oxfmt --check"
   },
   "dependencies": {
+    "@opencode-ai/models": "^0.0.87",
     "html-to-image": "^1.11.13",
-    "lucide-static": "^1.47.0",
-    "nanostores": "^1.5.3"
+    "lucide-static": "^1.48.0",
+    "nanostores": "^1.5.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -23,7 +24,7 @@
     "oxlint": "^1.85.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
-    "vite": "^8.3.0"
+    "vite": "^8.3.1"
   },
   "devEngines": {
     "packageManager": {

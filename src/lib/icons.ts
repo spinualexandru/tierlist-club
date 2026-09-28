@@ -21,7 +21,7 @@ export const PLUS_ICON = lucide(plusIcon, 'h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w
 export const MINUS_ICON = lucide(minusIcon, 'h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5')
 export const TRASH_ICON = lucide(
   trashIcon,
-  'h-7 w-7 sm:h-9 sm:w-9 md:h-11 md:w-11 lg:h-12 lg:w-12 xl:h-14 xl:w-14',
+  'h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 xl:h-9 xl:w-9',
 )
 
 /** Ghost cells after a tier's options: add options, or drop one to delete it. */

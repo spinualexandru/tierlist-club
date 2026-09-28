@@ -7,7 +7,7 @@ export interface TierProps {
   /** Full tier id: a base tier plus any +/- modifiers, e.g. 'A+'. */
   id: string
   items?: TierOption[]
-  /** Whether +/− can spawn (false when that variant already exists). */
+  /** Whether +/− can spawn (see `canSpawnTier`). */
   canSpawnAbove?: boolean
   canSpawnBelow?: boolean
 }
@@ -135,7 +135,7 @@ export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: T
       class="tier-row group/tier grow shrink-0 min-h-[216px] sm:min-h-[240px] md:min-h-28 flex md:flex-row flex-col sm:flex-col items-stretch w-full overflow-hidden"
     >
       <div
-        class="group relative w-full sm:w-full md:w-42 lg:w-46 md:h-full shrink-0 flex flex-col items-center justify-center gap-1 sm:gap-1.5 md:gap-0 p-2 sm:p-4 md:px-6 md:py-3 text-3xl sm:text-5xl md:text-[clamp(3rem,8vh,6rem)] font-medium leading-none select-none text-tier-text ${colorClass}"
+        class="group relative w-full sm:w-full md:w-42 lg:w-46 md:h-full shrink-0 flex flex-col items-center justify-center gap-1 sm:gap-1.5 md:gap-0 p-2 sm:p-4 md:px-6 md:py-3 text-2xl sm:text-4xl md:text-[clamp(2.25rem,6vh,4.5rem)] font-medium leading-none select-none text-tier-text ${colorClass}"
       >
         ${spawnControl(props.id, 'above', PLUS_ICON, canAbove)} ${letterSlot(props.id)}
         ${spawnControl(props.id, 'below', MINUS_ICON, canBelow)}

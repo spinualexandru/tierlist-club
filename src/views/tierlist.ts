@@ -18,6 +18,7 @@ import {
   moveOption,
   removeOption,
   spawnTier,
+  canSpawnTier,
   deleteTier,
   unrankedOptions,
   hasRankedOptions,
@@ -47,14 +48,14 @@ const tierStateOf = (list: TierList): WritableAtom<TierState> => {
   return state
 }
 
-const tiersHtml = ({ order, items }: TierState, optionsById: Map<string, TierOption>): string =>
-  order
+const tiersHtml = (state: TierState, optionsById: Map<string, TierOption>): string =>
+  state.order
     .map((id) =>
       tier({
         id,
-        items: (items[id] ?? []).flatMap((optionId) => optionsById.get(optionId) ?? []),
-        canSpawnAbove: !order.includes(`${id}+`),
-        canSpawnBelow: !order.includes(`${id}-`),
+        items: (state.items[id] ?? []).flatMap((optionId) => optionsById.get(optionId) ?? []),
+        canSpawnAbove: canSpawnTier(state, id, '+'),
+        canSpawnBelow: canSpawnTier(state, id, '-'),
       }),
     )
     .join('')

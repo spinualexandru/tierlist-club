@@ -87,10 +87,20 @@ export const removeOption = (state: TierState, id: string): TierState => {
   }
 }
 
+/**
+ * Whether `tierId` can spawn a `suffix` variant: it exists, the variant doesn't
+ * yet, and the suffix doesn't reverse a modifier it already has ('A+' can't
+ * spawn 'A+-', nor 'A-' spawn 'A-+').
+ */
+export const canSpawnTier = (state: TierState, tierId: string, suffix: '+' | '-'): boolean =>
+  state.order.includes(tierId) &&
+  !state.order.includes(`${tierId}${suffix}`) &&
+  !tierId.includes(suffix === '+' ? '-' : '+')
+
 /** Spawn a `tierId`+`suffix` tier directly above ('+') or below ('-') it. */
 export const spawnTier = (state: TierState, tierId: string, suffix: '+' | '-'): TierState => {
   const newId = `${tierId}${suffix}`
-  if (!state.order.includes(tierId) || state.order.includes(newId)) return state
+  if (!canSpawnTier(state, tierId, suffix)) return state
   const at = state.order.indexOf(tierId) + (suffix === '-' ? 1 : 0)
   return {
     order: [...state.order.slice(0, at), newId, ...state.order.slice(at)],

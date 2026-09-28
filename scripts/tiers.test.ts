@@ -4,6 +4,7 @@ import {
   unrankedOptions,
   addOptions,
   spawnTier,
+  canSpawnTier,
   deleteTier,
   moveOption,
   removeOption,
@@ -44,6 +45,18 @@ assert.equal(spawnTier(s, 'A', '-').order.length, 8)
 // --- spawning from a variant stacks modifiers ---
 s = spawnTier(s, 'A+', '+')
 assert.deepEqual(s.order, ['S', 'A++', 'A+', 'A', 'A-', 'B', 'C', 'D', 'F'])
+
+// --- a variant can't spawn the opposite modifier ('A+-' or 'A-+') ---
+assert.equal(canSpawnTier(s, 'A+', '-'), false)
+assert.equal(canSpawnTier(s, 'A++', '-'), false)
+assert.equal(canSpawnTier(s, 'A-', '+'), false)
+assert.equal(canSpawnTier(s, 'A++', '+'), true)
+assert.equal(canSpawnTier(s, 'A-', '-'), true)
+assert.equal(canSpawnTier(s, 'A', '+'), false) // A+ already exists
+assert.equal(canSpawnTier(s, 'B', '-'), true)
+assert.equal(canSpawnTier(s, 'X', '+'), false) // unknown tier
+assert.equal(spawnTier(s, 'A+', '-'), s)
+assert.equal(spawnTier(s, 'A-', '+'), s)
 
 // --- move options around, including into variants ---
 s = moveOption(s, 'pi', 'A+')

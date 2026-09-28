@@ -1,14 +1,21 @@
-// Cloudflare Worker serving the built SPA from dist/ as static assets (no Worker script).
+// Cloudflare Worker serving the built SPA from dist/ as static assets, plus the small
+// analytics endpoint in worker/ for /api/*.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "tierlist-club",
   "compatibility_date": "2026-09-01",
+  "main": "worker/index.ts",
   "assets": {
     "directory": "./dist",
     // Unknown paths (/harnesses, /models, ...) get index.html, so the client router takes over.
     "not_found_handling": "single-page-application",
+    // Only these paths reach the Worker script; the rest are served straight from dist/.
+    "run_worker_first": ["/api/*"],
   },
   "routes": [{ "pattern": "tierlist.club", "custom_domain": true }],
   "preview_urls": true,
+  // Custom events (lists started, PNGs exported), written by worker/index.ts. Queried with
+  // scripts/events.ts; the dataset is created on the first write.
+  "analytics_engine_datasets": [{ "binding": "EVENTS", "dataset": "tierlist_events" }],
   "observability": { "enabled": true },
 }

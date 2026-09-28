@@ -9,6 +9,7 @@ import {
   removeOption,
   isBaseTier,
   baseTierOf,
+  hasRankedOptions,
 } from '../src/lib/tiers.ts'
 
 const BASE = ['S', 'A', 'B', 'C', 'D', 'F']
@@ -143,5 +144,13 @@ assert.deepEqual(a.items['B'], ['2', '3']) // duplicates added once
 assert.equal(addOptions(a, ['1', '2', '3'], 'A'), a) // nothing left to add
 assert.equal(addOptions(a, ['4'], 'C'), a) // unknown tier
 assert.deepEqual(unrankedOptions(a, ['1', '2', '3', '4']), ['4'])
+
+// --- a list counts as started once any tier holds an option, and empty again once none does ---
+let h = initialTierState(BASE)
+assert.equal(hasRankedOptions(h), false)
+h = addOptions(h, ['1'], 'F')
+assert.equal(hasRankedOptions(h), true)
+assert.equal(hasRankedOptions(removeOption(h, '1')), false)
+assert.equal(hasRankedOptions({ order: ['S'], items: { X: ['1'] } }), false) // only tiers in `order` count
 
 console.log('all tier logic tests passed ✓')

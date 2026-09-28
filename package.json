@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && tsc -p worker && vite build",
     "preview": "vite preview",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -20,6 +20,7 @@
     "nanostores": "^1.5.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260927.1",
     "@tailwindcss/vite": "^4.3.3",
     "oxfmt": "^0.70.0",
     "oxlint": "^1.85.0",

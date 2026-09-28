@@ -5,6 +5,7 @@ import actionButton from '../components/action-button'
 import optionPicker, { optionPickerItems, type OptionsStatus } from '../components/option-picker'
 import siteHeader from '../components/site-header'
 import tier from '../components/tier'
+import { track } from '../lib/analytics'
 import { squareSide } from '../lib/export-size'
 import { genie } from '../lib/genie'
 import { DOWNLOAD_ICON, RESET_ICON } from '../lib/icons'
@@ -19,6 +20,7 @@ import {
   spawnTier,
   deleteTier,
   unrankedOptions,
+  hasRankedOptions,
   type TierState,
 } from '../lib/tiers'
 
@@ -35,6 +37,12 @@ const tierStateOf = (list: TierList): WritableAtom<TierState> => {
   if (!state) {
     state = atom(initialStateOf(list))
     tierStates.set(list.id, state)
+    // A list is started when its first option goes in, including again after a reset.
+    // The atom lives as long as the page, so this listener does too.
+    state.listen((next, prev) => {
+      if (hasRankedOptions(next) && !(prev && hasRankedOptions(prev)))
+        track('list_started', list.id)
+    })
   }
   return state
 }
@@ -430,6 +438,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       link.download = `${list.id}.png`
       link.href = dataUrl
       link.click()
+      track('png_exported', list.id)
     } catch (error) {
       console.error('Failed to export the tier list', error)
     } finally {

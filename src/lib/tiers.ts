@@ -29,6 +29,10 @@ export const unrankedOptions = (state: TierState, optionIds: string[]): string[]
   return optionIds.filter((id) => !ranked.has(id))
 }
 
+/** Whether any tier holds an option, e.g. to tell a list that's been started from an empty one. */
+export const hasRankedOptions = (state: TierState): boolean =>
+  state.order.some((tierId) => (state.items[tierId]?.length ?? 0) > 0)
+
 /**
  * Move an option to a tier, removing it from any other — or add it, if it
  * isn't in one yet. When `beforeId` is given the option is inserted in front

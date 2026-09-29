@@ -1,4 +1,4 @@
-import { CHECK_ICON, CHEVRON_DOWN_ICON, THEME_ICONS } from '../lib/icons'
+import { BOT_ICON, CHECK_ICON, CHEVRON_DOWN_ICON, THEME_ICONS } from '../lib/icons'
 import { systemTheme, themeLabel, type ThemeMode } from '../lib/theme'
 
 export interface SiteHeaderLink {
@@ -15,10 +15,13 @@ export interface SiteHeaderProps {
   links: SiteHeaderLink[]
   /** The theme the toggle shows. */
   themeMode: ThemeMode
+  /** Whether the browser has WebMCP, so AI agents get the tools in src/lib/webmcp.ts. */
+  webmcp: boolean
 }
 
 /**
- * The logo and wordmark, and a dropdown switching between the tier lists: a
+ * The logo and wordmark, a "WebMCP available" pill with a rainbow border
+ * while the browser has WebMCP (hidden on narrow screens), and a dropdown switching between the tier lists: a
  * button labeled "Tier type" that opens a `data-list-menu` popover (see
  * `.list-menu` in style.css) with one `data-link` per list, the active one checked. The popover closes
  * itself on outside clicks and Escape; the view closes it on a pick. Beside it,
@@ -26,7 +29,7 @@ export interface SiteHeaderProps {
  * (following the system), sun, or moon (pinned); the view flips the mode on a
  * click (see `nextThemeMode`) and keeps its `data-mode` and label up to date.
  */
-export default function siteHeader({ links, themeMode }: SiteHeaderProps): string {
+export default function siteHeader({ links, themeMode, webmcp }: SiteHeaderProps): string {
   return html`
     <header class="flex items-center justify-between gap-4 shrink-0 mb-5">
       <a
@@ -41,6 +44,16 @@ export default function siteHeader({ links, themeMode }: SiteHeaderProps): strin
         >
       </a>
       <div class="flex items-center gap-1">
+        ${
+          webmcp
+            ? html`<span
+                title="AI agents in this browser can make, share, and export tier lists here with WebMCP tools"
+                class="rainbow-border hidden sm:inline-flex items-center gap-1.5 h-8 mr-1 px-3 rounded-full text-xs font-medium text-foreground/80 whitespace-nowrap select-none"
+              >
+                ${BOT_ICON} WebMCP available
+              </span>`
+            : ''
+        }
         <button
           type="button"
           popovertarget="list-menu"

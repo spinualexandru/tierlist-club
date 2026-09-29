@@ -177,7 +177,7 @@ body {
   transition: opacity 150ms ease-out;
 }
 
-/* --- Export button --- */
+/* --- Rainbow borders (export button, WebMCP pill) --- */
 
 /* Tier colors S → F */
 :root {
@@ -191,6 +191,14 @@ body {
   syntax: '<angle>';
   inherits: false;
   initial-value: 0deg;
+}
+
+/* Rainbow border, S → F left to right (the header's WebMCP pill) */
+.rainbow-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--color-background), var(--color-background)) padding-box,
+    linear-gradient(to right, var(--rainbow-stops)) border-box;
 }
 
 /* Rainbow border whose colors travel around the element */

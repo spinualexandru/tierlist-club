@@ -2,6 +2,7 @@ import { Effect } from 'effect'
 import { atom, type WritableAtom } from 'nanostores'
 import { themeClass } from '../theme'
 import actionButton from '../components/action-button'
+import { exportFooter, exportHeading } from '../components/export-signature'
 import optionPicker, { optionPickerItems, type OptionsStatus } from '../components/option-picker'
 import shareDialog from '../components/share-dialog'
 import siteHeader from '../components/site-header'
@@ -27,6 +28,7 @@ import {
   deleteTier,
   unrankedOptions,
   hasRankedOptions,
+  canReset,
   type TierState,
 } from '../lib/tiers'
 
@@ -123,6 +125,10 @@ export const openShared = async (list: TierList, selections: string): Promise<bo
   return true
 }
 
+/** The share button's name, which says why it's disabled while nothing is ranked. */
+const shareLabel = (state: TierState): string =>
+  hasRankedOptions(state) ? 'Share link' : 'Rank an option to share it'
+
 const tiersHtml = (state: TierState, optionsById: Map<string, TierOption>): string =>
   state.order
     .map((id) =>
@@ -187,21 +193,29 @@ const flash = () => {
 
 /**
  * An off-screen copy of the tier list to capture, so it can be re-laid out
- * without the page moving: no ghost "+" and trash cells, no pop-in animation
- * (a fresh copy would replay it from invisible), and its natural height.
- * Remove its `host` when done.
+ * without the page moving: no ghost "+" and trash cells, no hover controls
+ * (which hang below the last row), no pop-in animation
+ * (a fresh copy would replay it from invisible), and its natural height. It
+ * sits in a `frame` between the export's heading and footer, which is what
+ * gets captured; the copy grows to fill the frame's height, and never scrolls
+ * (sub-pixel rounding would otherwise show a scrollbar). Remove its `host` when done.
  */
-const exportCopyOf = (node: HTMLElement) => {
+const exportCopyOf = (node: HTMLElement, list: TierList) => {
   const host = document.createElement('div')
   host.setAttribute('aria-hidden', 'true')
   host.style.cssText = 'position: fixed; top: 0; left: -100000px;'
   const copy = node.cloneNode(true) as HTMLElement
-  for (const el of copy.querySelectorAll('[data-add-option], [data-trash]')) el.remove()
+  for (const el of copy.querySelectorAll('[data-add-option], [data-trash], .tier-controls'))
+    el.remove()
   for (const el of copy.querySelectorAll('.dropped')) el.classList.remove('dropped')
-  copy.style.height = 'auto'
-  host.append(copy)
+  Object.assign(copy.style, { height: 'auto', margin: '0', flex: '1 0 auto', overflow: 'hidden' })
+  const frame = document.createElement('div')
+  frame.style.cssText = 'display: flex; flex-direction: column;'
+  frame.innerHTML = exportHeading({ label: list.label }) + exportFooter()
+  frame.lastElementChild?.before(copy)
+  host.append(frame)
   document.body.append(host)
-  return { host, copy }
+  return { host, frame }
 }
 
 /** Set while a PNG export runs, so the button and an AI agent can't start one on top of it. */
@@ -209,7 +223,7 @@ let exporting = false
 
 /**
  * Capture a list's `[data-tiers]` (including rows scrolled out of view) as a
- * square PNG, saved as `<list id>.png` if `download`. Null, doing nothing,
+ * square PNG with the list's name above it and the site's below, saved as `<list id>.png` if `download`. Null, doing nothing,
  * while another export is running.
  */
 const exportPng = async (
@@ -222,23 +236,23 @@ const exportPng = async (
   try {
     flash()
     const { toPng } = await import('html-to-image')
-    const { host, copy } = exportCopyOf(node)
+    const { host, frame } = exportCopyOf(node, list)
     let dataUrl: string
     let size: number
     try {
       // A square: a sparse list widens to its height, a crowded one wraps its rows until it fits.
       const side = squareSide(
         (width) => {
-          copy.style.width = `${width}px`
-          return copy.scrollHeight
+          frame.style.width = `${width}px`
+          return frame.scrollHeight
         },
         MIN_EXPORT_SIDE,
         node.scrollWidth,
       )
-      // The rows stretch to fill the square's height.
-      Object.assign(copy.style, { width: `${side}px`, height: `${side}px` })
+      // The rows stretch to fill the square's height, between the heading and footer.
+      Object.assign(frame.style, { width: `${side}px`, height: `${side}px` })
       size = side + 2 * EXPORT_MARGIN
-      dataUrl = await toPng(copy, {
+      dataUrl = await toPng(frame, {
         pixelRatio,
         backgroundColor: pageBackground(),
         width: size,
@@ -392,6 +406,20 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     button.toggleAttribute('data-armed', armed)
   }
   signal.addEventListener('abort', () => clearTimeout(resetTimer), { once: true })
+
+  // Reset shows only while there's something to reset, and share is disabled until something's ranked.
+  const syncActions = (state: TierState) => {
+    const reset = app.querySelector<HTMLElement>('[data-reset]')
+    if (reset?.parentElement) reset.parentElement.hidden = !canReset(state, list.tiers)
+    const share = app.querySelector<HTMLButtonElement>('[data-share]')
+    if (!share) return
+    const label = shareLabel(state)
+    share.disabled = !hasRankedOptions(state)
+    share.setAttribute('aria-label', label)
+    const toast = share.querySelector('[data-action-label]')
+    if (toast) toast.textContent = label
+  }
+  signal.addEventListener('abort', tierState.listen(syncActions), { once: true })
 
   app.addEventListener(
     'click',
@@ -595,9 +623,8 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     const dialog = shareDialogOf()
     if (!dialog) return
     const state = tierState.get()
-    const url = hasRankedOptions(state)
-      ? location.origin + sharePath(list.id, encodeSelections(state, list.tiers, optionIds))
-      : null
+    if (!hasRankedOptions(state)) return
+    const url = location.origin + sharePath(list.id, encodeSelections(state, list.tiers, optionIds))
     dialog.innerHTML = shareDialog({ url })
     dialog.showModal()
     dialog.querySelector<HTMLElement>('[data-share-copy]')?.focus()
@@ -954,6 +981,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
           active: other.id === list.id,
         })),
         themeMode: themeMode.get(),
+        webmcp: Boolean(document.modelContext),
       })}
       <main class="relative flex-1 min-w-0 min-h-0">
         <h1 class="sr-only">${list.title}</h1>
@@ -975,12 +1003,14 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
             icon: RESET_ICON,
             frame: 'border border-foreground/10 bg-background',
             confirmLabel: 'You sure?',
+            hidden: !canReset(tierState.get(), list.tiers),
           })}
           ${actionButton({
             action: 'share',
-            label: 'Share link',
+            label: shareLabel(tierState.get()),
             icon: SHARE_ICON,
             frame: 'border border-foreground/10 bg-background',
+            disabled: !hasRankedOptions(tierState.get()),
           })}
           ${actionButton({
             action: 'export',

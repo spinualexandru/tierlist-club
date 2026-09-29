@@ -34,6 +34,19 @@ export const hasRankedOptions = (state: TierState): boolean =>
   state.order.some((tierId) => (state.items[tierId]?.length ?? 0) > 0)
 
 /**
+ * Whether resetting would change anything: an option is ranked, or the tiers
+ * differ from the configured `tiers` (one was added or deleted).
+ */
+export const canReset = (state: TierState, tiers: string[]): boolean => {
+  const initial = initialTierState(tiers).order
+  return (
+    hasRankedOptions(state) ||
+    state.order.length !== initial.length ||
+    state.order.some((id, index) => id !== initial[index])
+  )
+}
+
+/**
  * Move an option to a tier, removing it from any other — or add it, if it
  * isn't in one yet. When `beforeId` is given the option is inserted in front
  * of it, otherwise it is appended. Unknown tiers are a no-op, so the option

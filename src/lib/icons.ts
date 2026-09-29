@@ -1,3 +1,4 @@
+import botIcon from 'lucide-static/icons/bot.svg?raw'
 import broomIcon from 'lucide-static/icons/broom.svg?raw'
 import checkIcon from 'lucide-static/icons/check.svg?raw'
 import chevronDownIcon from 'lucide-static/icons/chevron-down.svg?raw'
@@ -27,6 +28,9 @@ export const lucide = (raw: string, classes: string): string =>
 /** Site header: the list switcher's chevron, and a check by the active list in its menu. */
 export const CHEVRON_DOWN_ICON = lucide(chevronDownIcon, 'h-4.5 w-4.5 stroke-[2.5]')
 export const CHECK_ICON = lucide(checkIcon, 'h-4 w-4 text-tier-s')
+
+/** Site header: the WebMCP pill's agent. */
+export const BOT_ICON = lucide(botIcon, 'h-4 w-4 stroke-[2.25]')
 
 /** The theme toggle's icons, stacked in its button (see `.theme-toggle` in style.css): one per mode. */
 const themeIcon = (raw: string, mode: string) =>

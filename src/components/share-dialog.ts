@@ -2,8 +2,8 @@ import { CLOSE_ICON, COPIED_ICON, COPY_ICON } from '../lib/icons'
 import { escapeHtml } from '../lib/render'
 
 export interface ShareDialogProps {
-  /** The link to the tier list as it's ranked now, or null while nothing is ranked. */
-  url: string | null
+  /** The link to the tier list as it's ranked now. */
+  url: string
 }
 
 /**
@@ -18,13 +18,7 @@ export default function shareDialog({ url }: ShareDialogProps): string {
       <header class="flex items-start gap-3">
         <div class="flex-1 min-w-0">
           <h2 id="share-dialog-title" class="m-0 text-base font-semibold">Share tier list</h2>
-          <p class="m-0 mt-0.5 text-xs text-muted">
-            ${
-              url
-                ? 'Anyone with this link sees your ranking.'
-                : 'Rank some options first — there’s nothing to share yet.'
-            }
-          </p>
+          <p class="m-0 mt-0.5 text-xs text-muted">Anyone with this link sees your ranking.</p>
         </div>
         <button
           type="button"
@@ -35,32 +29,26 @@ export default function shareDialog({ url }: ShareDialogProps): string {
           ${CLOSE_ICON}
         </button>
       </header>
-      ${
-        url
-          ? html`
-              <div class="flex items-center gap-2">
-                <input
-                  type="text"
-                  readonly
-                  data-share-url
-                  value="${escapeHtml(url)}"
-                  aria-label="Link to this tier list"
-                  spellcheck="false"
-                  class="flex-1 min-w-0 h-10 px-3 rounded-xl bg-foreground/5 text-sm text-foreground/80 font-mono truncate outline-none focus:bg-foreground/10 focus:outline-2 focus:outline-foreground transition duration-150 ease-out"
-                />
-                <button
-                  type="button"
-                  data-share-copy
-                  aria-label="Copy link"
-                  class="group m-0 inline-flex items-center justify-center gap-2 h-10 px-3 rounded-xl bg-brand text-sm font-semibold text-tier-text cursor-pointer select-none hover:brightness-110 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-                >
-                  ${COPY_ICON}${COPIED_ICON}
-                  <span data-share-copy-label>Copy</span>
-                </button>
-              </div>
-            `
-          : ''
-      }
+      <div class="flex items-center gap-2">
+        <input
+          type="text"
+          readonly
+          data-share-url
+          value="${escapeHtml(url)}"
+          aria-label="Link to this tier list"
+          spellcheck="false"
+          class="flex-1 min-w-0 h-10 px-3 rounded-xl bg-foreground/5 text-sm text-foreground/80 font-mono truncate outline-none focus:bg-foreground/10 focus:outline-2 focus:outline-foreground transition duration-150 ease-out"
+        />
+        <button
+          type="button"
+          data-share-copy
+          aria-label="Copy link"
+          class="group m-0 inline-flex items-center justify-center gap-2 h-10 px-3 rounded-xl bg-brand text-sm font-semibold text-tier-text cursor-pointer select-none hover:brightness-110 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+        >
+          ${COPY_ICON}${COPIED_ICON}
+          <span data-share-copy-label>Copy</span>
+        </button>
+      </div>
     </div>
   `
 }

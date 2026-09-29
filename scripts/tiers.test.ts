@@ -12,6 +12,7 @@ import {
   isBaseTier,
   baseTierOf,
   hasRankedOptions,
+  canReset,
   addTier,
 } from '../src/lib/tiers.ts'
 
@@ -178,6 +179,17 @@ h = addOptions(h, ['1'], 'F')
 assert.equal(hasRankedOptions(h), true)
 assert.equal(hasRankedOptions(removeOption(h, '1')), false)
 assert.equal(hasRankedOptions({ order: ['S'], items: { X: ['1'] } }), false) // only tiers in `order` count
+
+// --- a list can be reset once an option is ranked or its tiers differ from the configured ones ---
+const configured = ['S', 'A+', 'A', 'B']
+const pristine = initialTierState(configured)
+assert.equal(canReset(pristine, configured), false)
+assert.equal(canReset(addOptions(pristine, ['1'], 'B'), configured), true)
+assert.equal(canReset(removeOption(addOptions(pristine, ['1'], 'B'), '1'), configured), false)
+assert.equal(canReset(spawnTier(pristine, 'B', '-'), configured), true) // a tier added
+assert.equal(canReset(deleteTier(pristine, 'A+'), configured), true) // a configured variant deleted
+assert.equal(canReset(deleteTier(spawnTier(pristine, 'B', '-'), 'B-'), configured), false) // and gone again
+assert.equal(canReset(initialTierState(['S', 'S', 'A']), ['S', 'A']), false) // duplicates collapse
 
 // --- addTier puts a variant right above (+) or below (-) its closest ancestor, in any order ---
 let t = addOptions(initialTierState(BASE), ['1'], 'A')

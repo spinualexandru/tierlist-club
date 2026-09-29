@@ -4,6 +4,7 @@ import checkIcon from 'lucide-static/icons/check.svg?raw'
 import chevronDownIcon from 'lucide-static/icons/chevron-down.svg?raw'
 import copyIcon from 'lucide-static/icons/copy.svg?raw'
 import downloadIcon from 'lucide-static/icons/download.svg?raw'
+import externalLinkIcon from 'lucide-static/icons/external-link.svg?raw'
 import listPlusIcon from 'lucide-static/icons/list-plus.svg?raw'
 import loaderCircleIcon from 'lucide-static/icons/loader-circle.svg?raw'
 import minusIcon from 'lucide-static/icons/minus.svg?raw'
@@ -29,8 +30,9 @@ export const lucide = (raw: string, classes: string): string =>
 export const CHEVRON_DOWN_ICON = lucide(chevronDownIcon, 'h-4.5 w-4.5 stroke-[2.5]')
 export const CHECK_ICON = lucide(checkIcon, 'h-4 w-4 text-tier-s')
 
-/** Site header: the WebMCP pill's agent. */
+/** Site header: the WebMCP pill's agent, and the arrow saying it opens another site. */
 export const BOT_ICON = lucide(botIcon, 'h-4 w-4 stroke-[2.25]')
+export const EXTERNAL_LINK_ICON = lucide(externalLinkIcon, 'h-3.5 w-3.5 stroke-[2.25]')
 
 /** The theme toggle's icons, stacked in its button (see `.theme-toggle` in style.css): one per mode. */
 const themeIcon = (raw: string, mode: string) =>

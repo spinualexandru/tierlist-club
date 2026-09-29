@@ -1,4 +1,10 @@
-import { BOT_ICON, CHECK_ICON, CHEVRON_DOWN_ICON, THEME_ICONS } from '../lib/icons'
+import {
+  BOT_ICON,
+  CHECK_ICON,
+  CHEVRON_DOWN_ICON,
+  EXTERNAL_LINK_ICON,
+  THEME_ICONS,
+} from '../lib/icons'
 import { systemTheme, themeLabel, type ThemeMode } from '../lib/theme'
 
 export interface SiteHeaderLink {
@@ -21,7 +27,8 @@ export interface SiteHeaderProps {
 
 /**
  * The logo and wordmark, a "WebMCP available" pill with a rainbow border
- * while the browser has WebMCP (hidden on narrow screens), and a dropdown switching between the tier lists: a
+ * while the browser has WebMCP (hidden on narrow screens), linking to Chrome's
+ * WebMCP docs in a new tab, and a dropdown switching between the tier lists: a
  * button labeled "Tier type" that opens a `data-list-menu` popover (see
  * `.list-menu` in style.css) with one `data-link` per list, the active one checked. The popover closes
  * itself on outside clicks and Escape; the view closes it on a pick. Beside it,
@@ -46,12 +53,16 @@ export default function siteHeader({ links, themeMode, webmcp }: SiteHeaderProps
       <div class="flex items-center gap-1">
         ${
           webmcp
-            ? html`<span
-                title="AI agents in this browser can make, share, and export tier lists here with WebMCP tools"
-                class="rainbow-border hidden sm:inline-flex items-center gap-1.5 h-8 mr-1 px-3 rounded-full text-xs font-medium text-foreground/80 whitespace-nowrap select-none"
+            ? html`<a
+                href="https://developer.chrome.com/docs/ai/webmcp"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="AI agents in this browser can make, share, and export tier lists here with WebMCP tools. Learn more about WebMCP"
+                aria-label="WebMCP available: learn more (opens in a new tab)"
+                class="rainbow-border hidden sm:inline-flex items-center gap-1.5 h-8 mr-1 px-3 rounded-full text-xs font-medium text-foreground/80 no-underline whitespace-nowrap select-none hover:text-foreground active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
               >
-                ${BOT_ICON} WebMCP available
-              </span>`
+                ${BOT_ICON} WebMCP available ${EXTERNAL_LINK_ICON}
+              </a>`
             : ''
         }
         <button

@@ -198,6 +198,10 @@ export const llmsTxt = (pages: Page[]): string =>
       ]
     }),
     '',
+    '## AI agents',
+    '',
+    'In browsers with WebMCP, each page gives AI agents tools to search the options, rank them into tiers, get a share link, and save the PNG, so an agent can make a tier list without dragging and dropping.',
+    '',
     '## Share links',
     '',
     `A shared tier list opens from a link like \`${SITE_URL}/?type=<list id>&selections=<data>\`, where the list id is ${pages.map(({ list }) => `\`${list.id}\``).join(' or ')} and the selections are compact base64url-encoded binary, not readable text. Opening the link fills the list in and moves to the list's own URL.`,

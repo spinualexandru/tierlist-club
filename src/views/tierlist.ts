@@ -14,6 +14,7 @@ import { decodeSelections, encodeSelections, sharePath } from '../lib/share'
 import { nextThemeMode, pageBackground, systemTheme, themeLabel, themeMode } from '../lib/theme'
 import { absoluteUrl, pageTitle } from '../lib/seo'
 import { searchOptions, type TierList, type TierOption } from '../lib/tierlist'
+import type { Png, TierListHost } from '../lib/webmcp'
 import { tierListPath, tierLists } from '../tierlists'
 import {
   initialTierState,
@@ -52,6 +53,12 @@ const tierStates = new Map<string, WritableAtom<TierState>>()
 /** Options of tier lists that load theirs, once loaded — so they're only fetched once. */
 const loadedOptions = new Map<string, TierOption[]>()
 
+/** Option loads under way, so the view and an AI agent asking at the same time share one. */
+const loadingOptions = new Map<string, Promise<TierOption[]>>()
+
+/** The list on screen, while its view is. */
+let shownList: TierList | undefined
+
 const initialStateOf = (list: TierList): TierState => initialTierState(list.tiers)
 
 /** A list's state, created from `initial` the first time it's asked for. */
@@ -74,11 +81,22 @@ const tierStateOf = (
 }
 
 /** A list's options, loading (and keeping) them if it loads its own. */
-const optionsOf = async (list: TierList): Promise<TierOption[]> => {
-  if (Array.isArray(list.options)) return list.options
-  const options = loadedOptions.get(list.id) ?? (await Effect.runPromise(list.options))
-  loadedOptions.set(list.id, options)
-  return options
+const optionsOf = (list: TierList): Promise<TierOption[]> => {
+  const { options } = list
+  if (Array.isArray(options)) return Promise.resolve(options)
+  const loaded = loadedOptions.get(list.id)
+  if (loaded) return Promise.resolve(loaded)
+  let loading = loadingOptions.get(list.id)
+  if (!loading) {
+    loading = Effect.runPromise(options)
+      .then((loaded) => {
+        loadedOptions.set(list.id, loaded)
+        return loaded
+      })
+      .finally(() => loadingOptions.delete(list.id))
+    loadingOptions.set(list.id, loading)
+  }
+  return loading
 }
 
 /**
@@ -158,7 +176,136 @@ const EXPORT_MARGIN = 16
 /** The trash can's gulp once a deleted option is in, fading it out. */
 const GULP_DURATION_MS = 320
 
+// Camera-flash feedback while the tier list is being captured.
+const flash = () => {
+  const el = document.createElement('div')
+  el.className = 'export-flash'
+  el.setAttribute('aria-hidden', 'true')
+  document.body.appendChild(el)
+  el.addEventListener('animationend', () => el.remove(), { once: true })
+}
+
+/**
+ * An off-screen copy of the tier list to capture, so it can be re-laid out
+ * without the page moving: no ghost "+" and trash cells, no pop-in animation
+ * (a fresh copy would replay it from invisible), and its natural height.
+ * Remove its `host` when done.
+ */
+const exportCopyOf = (node: HTMLElement) => {
+  const host = document.createElement('div')
+  host.setAttribute('aria-hidden', 'true')
+  host.style.cssText = 'position: fixed; top: 0; left: -100000px;'
+  const copy = node.cloneNode(true) as HTMLElement
+  for (const el of copy.querySelectorAll('[data-add-option], [data-trash]')) el.remove()
+  for (const el of copy.querySelectorAll('.dropped')) el.classList.remove('dropped')
+  copy.style.height = 'auto'
+  host.append(copy)
+  document.body.append(host)
+  return { host, copy }
+}
+
+/** Set while a PNG export runs, so the button and an AI agent can't start one on top of it. */
+let exporting = false
+
+/**
+ * Capture a list's `[data-tiers]` (including rows scrolled out of view) as a
+ * square PNG, saved as `<list id>.png` if `download`. Null, doing nothing,
+ * while another export is running.
+ */
+const exportPng = async (
+  node: HTMLElement,
+  list: TierList,
+  { download, pixelRatio }: { download: boolean; pixelRatio: number },
+): Promise<Png | null> => {
+  if (exporting) return null
+  exporting = true
+  try {
+    flash()
+    const { toPng } = await import('html-to-image')
+    const { host, copy } = exportCopyOf(node)
+    let dataUrl: string
+    let size: number
+    try {
+      // A square: a sparse list widens to its height, a crowded one wraps its rows until it fits.
+      const side = squareSide(
+        (width) => {
+          copy.style.width = `${width}px`
+          return copy.scrollHeight
+        },
+        MIN_EXPORT_SIDE,
+        node.scrollWidth,
+      )
+      // The rows stretch to fill the square's height.
+      Object.assign(copy.style, { width: `${side}px`, height: `${side}px` })
+      size = side + 2 * EXPORT_MARGIN
+      dataUrl = await toPng(copy, {
+        pixelRatio,
+        backgroundColor: pageBackground(),
+        width: size,
+        height: size,
+        // `width`/`height` above size the image, with a margin around the tier list.
+        style: { width: `${side}px`, height: `${side}px`, margin: `${EXPORT_MARGIN}px` },
+      })
+    } finally {
+      host.remove()
+    }
+    const fileName = `${list.id}.png`
+    if (download) {
+      const link = document.createElement('a')
+      link.download = fileName
+      link.href = dataUrl
+      link.click()
+    }
+    track('png_exported', list.id)
+    return { dataUrl, fileName, width: size * pixelRatio, height: size * pixelRatio }
+  } finally {
+    exporting = false
+  }
+}
+
+/**
+ * The tier lists as the WebMCP tools see them (see src/lib/webmcp.ts). A tool
+ * changing or exporting a list puts it on screen first with `show`, so the
+ * user sees what the agent does.
+ */
+export const agentHost = (
+  app: HTMLElement,
+  lists: TierList[],
+  show: (list: TierList) => void,
+): TierListHost => {
+  const showList = (list: TierList) => {
+    if (shownList !== list) show(list)
+  }
+  return {
+    lists,
+    shown: () => shownList,
+    optionsOf,
+    stateOf: (list) => tierStateOf(list).get(),
+    update: (list, state) => {
+      showList(list)
+      tierStateOf(list).set(state)
+    },
+    exportPng: async (list, options) => {
+      // html-to-image waits for an animation frame, which a background tab doesn't get.
+      if (document.visibilityState === 'hidden')
+        throw new Error(
+          "The page is in a background tab, where it can't be captured. Switch to it, then try again.",
+        )
+      showList(list)
+      const node = app.querySelector<HTMLElement>('[data-tiers]')
+      if (!node || shownList !== list)
+        throw new Error(`The ${list.name} tier list isn't on screen.`)
+      const png = await exportPng(node, list, options)
+      if (!png) throw new Error('Another export is still running. Try again in a moment.')
+      return png
+    },
+    origin: location.origin,
+  }
+}
+
 export default function (app: HTMLDivElement, list: TierList, signal: AbortSignal) {
+  shownList = list
+  signal.addEventListener('abort', () => (shownList = undefined), { once: true })
   const tierState = tierStateOf(list)
   let optionsStatus: OptionsStatus = 'loading'
   let optionsById = new Map<string, TierOption>()
@@ -171,7 +318,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
   const unrankedOf = (state: TierState): TierOption[] =>
     unrankedOptions(state, optionIds).flatMap((id) => optionsById.get(id) ?? [])
 
-  /** Options just dropped or added, which pop into their tier instead of gliding there. */
+  /** Options just dropped, which pop into their tier instead of gliding there, like ones new to the list. */
   let poppingIds = new Set<string>()
   let activeDragId: string | null = null
   let ghost: HTMLElement | null = null
@@ -198,14 +345,12 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       const id = cell.dataset.option
       if (!id) continue
 
-      if (poppingIds.has(id)) {
+      // New options (picked, or ranked by an AI agent) pop in too.
+      const rect = before.get(id)
+      if (poppingIds.has(id) || !rect) {
         cell.style.animationDelay = `${popDelay(popped++)}ms`
         cell.classList.add('dropped')
-        continue
-      }
-
-      const rect = before.get(id)
-      if (rect) glide(cell, rect)
+      } else glide(cell, rect)
     }
     poppingIds = new Set()
   }
@@ -334,13 +479,15 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
 
   // Lists that load their options start fetching them right away, so they're
   // usually there by the time the picker opens; until then it shows a spinner.
-  const loadOptions = async (load: Effect.Effect<TierOption[], unknown>) => {
+  const loadOptions = async () => {
     optionsStatus = 'loading'
     refreshPicker(tierState.get())
     try {
-      const options = await Effect.runPromise(load, { signal })
-      loadedOptions.set(list.id, options)
+      const options = await optionsOf(list)
+      if (signal.aborted) return
       setOptions(options)
+      // Options an AI agent ranked while they loaded show up now.
+      if (hasRankedOptions(tierState.get())) renderTiers(tierState.get())
     } catch (error) {
       if (signal.aborted) return
       console.error(`Failed to load the options of ${list.id}`, error)
@@ -353,7 +500,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
   else {
     const loaded = loadedOptions.get(list.id)
     if (loaded) setOptions(loaded)
-    else void loadOptions(list.options)
+    else void loadOptions()
   }
 
   app.addEventListener(
@@ -364,7 +511,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       if (add?.dataset.addOption) return openPicker(add.dataset.addOption)
 
       if (event.target.closest('[data-picker-retry]') && !Array.isArray(list.options)) {
-        void loadOptions(list.options)
+        void loadOptions()
         return
       }
 
@@ -376,11 +523,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
         const ids = pick?.dataset.pick
           ? [pick.dataset.pick]
           : pickableOf(tierState.get()).map((option) => option.id)
-        const next = addOptions(tierState.get(), ids, pickerTier)
-        if (next !== tierState.get()) {
-          poppingIds = new Set(ids)
-          tierState.set(next)
-        }
+        tierState.set(addOptions(tierState.get(), ids, pickerTier))
         if (pickAll) pickerOf()?.close()
         return
       }
@@ -501,84 +644,16 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     { signal },
   )
 
-  // Camera-flash feedback while the tier list is being captured.
-  const flash = () => {
-    const el = document.createElement('div')
-    el.className = 'export-flash'
-    el.setAttribute('aria-hidden', 'true')
-    document.body.appendChild(el)
-    el.addEventListener('animationend', () => el.remove(), { once: true })
-  }
-
-  /**
-   * An off-screen copy of the tier list to capture, so it can be re-laid out
-   * without the page moving: no ghost "+" and trash cells, no pop-in animation
-   * (a fresh copy would replay it from invisible), and its natural height.
-   * Remove its `host` when done.
-   */
-  const exportCopyOf = (node: HTMLElement) => {
-    const host = document.createElement('div')
-    host.setAttribute('aria-hidden', 'true')
-    host.style.cssText = 'position: fixed; top: 0; left: -100000px;'
-    const copy = node.cloneNode(true) as HTMLElement
-    for (const el of copy.querySelectorAll('[data-add-option], [data-trash]')) el.remove()
-    for (const el of copy.querySelectorAll('.dropped')) el.classList.remove('dropped')
-    copy.style.height = 'auto'
-    host.append(copy)
-    document.body.append(host)
-    return { host, copy }
-  }
-
-  // Capture the whole tier list (including rows scrolled out of view) as a PNG download.
-  let exporting = false
-  const exportPng = async () => {
-    const node = app.querySelector<HTMLElement>('[data-tiers]')
-    if (!node || exporting) return
-    exporting = true
-    try {
-      flash()
-      const { toPng } = await import('html-to-image')
-      const { host, copy } = exportCopyOf(node)
-      let dataUrl: string
-      try {
-        // A square: a sparse list widens to its height, a crowded one wraps its rows until it fits.
-        const side = squareSide(
-          (width) => {
-            copy.style.width = `${width}px`
-            return copy.scrollHeight
-          },
-          MIN_EXPORT_SIDE,
-          node.scrollWidth,
-        )
-        // The rows stretch to fill the square's height.
-        Object.assign(copy.style, { width: `${side}px`, height: `${side}px` })
-        dataUrl = await toPng(copy, {
-          pixelRatio: 2,
-          backgroundColor: pageBackground(),
-          width: side + 2 * EXPORT_MARGIN,
-          height: side + 2 * EXPORT_MARGIN,
-          // `width`/`height` above size the image, with a margin around the tier list.
-          style: { width: `${side}px`, height: `${side}px`, margin: `${EXPORT_MARGIN}px` },
-        })
-      } finally {
-        host.remove()
-      }
-      const link = document.createElement('a')
-      link.download = `${list.id}.png`
-      link.href = dataUrl
-      link.click()
-      track('png_exported', list.id)
-    } catch (error) {
-      console.error('Failed to export the tier list', error)
-    } finally {
-      exporting = false
-    }
-  }
-
+  // Save the whole tier list as a PNG download.
   app.addEventListener(
     'click',
     (event) => {
-      if (event.target instanceof Element && event.target.closest('[data-export]')) void exportPng()
+      if (!(event.target instanceof Element) || !event.target.closest('[data-export]')) return
+      const node = app.querySelector<HTMLElement>('[data-tiers]')
+      if (!node) return
+      exportPng(node, list, { download: true, pixelRatio: 2 }).catch((error) =>
+        console.error('Failed to export the tier list', error),
+      )
     },
     { signal },
   )

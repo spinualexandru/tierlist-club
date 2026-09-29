@@ -114,17 +114,39 @@ export const spawnTier = (state: TierState, tierId: string, suffix: '+' | '-'): 
   }
 }
 
+/** A tier's closest ancestor in `order`, taking off one modifier at a time ('A++' → 'A+' → 'A'). */
+const ancestorIn = (order: string[], tierId: string): string | undefined => {
+  const base = baseTierOf(tierId)
+  for (let parent = tierId.slice(0, -1); parent.length >= base.length; parent = parent.slice(0, -1))
+    if (order.includes(parent)) return parent
+  return undefined
+}
+
 /**
- * Where a deleted tier's options go: its closest surviving ancestor (walking
- * up one modifier at a time), else the neighboring tier above or below — a
- * configured variant like 'F+' may have no base 'F' to fall back to.
+ * Add a variant tier like 'A+' or 'B--' right above ('+') or below ('-') its
+ * closest ancestor, e.g. 'A++' above 'A' when there's no 'A+'. A no-op if
+ * it's there already, isn't a variant, mixes + and -, or has no ancestor.
+ */
+export const addTier = (state: TierState, tierId: string): TierState => {
+  const modifiers = tierId.slice(baseTierOf(tierId).length)
+  if (!modifiers || state.order.includes(tierId) || /\+-|-\+/.test(modifiers)) return state
+  const ancestor = ancestorIn(state.order, tierId)
+  if (!ancestor) return state
+  const at = state.order.indexOf(ancestor) + (modifiers.startsWith('-') ? 1 : 0)
+  return {
+    order: [...state.order.slice(0, at), tierId, ...state.order.slice(at)],
+    items: { ...state.items, [tierId]: [] },
+  }
+}
+
+/**
+ * Where a deleted tier's options go: its closest surviving ancestor, else the
+ * neighboring tier above or below — a configured variant like 'F+' may have
+ * no base 'F' to fall back to.
  */
 const foldTargetOf = (order: string[], tierId: string): string | undefined => {
-  let parent = tierId.slice(0, -1)
-  while (parent && !order.includes(parent)) parent = parent.slice(0, -1)
-  if (parent) return parent
   const at = order.indexOf(tierId)
-  return order[at - 1] ?? order[at + 1]
+  return ancestorIn(order, tierId) ?? order[at - 1] ?? order[at + 1]
 }
 
 /** Delete a variant tier, folding its options into the tier from `foldTargetOf`. */

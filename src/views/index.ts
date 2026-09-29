@@ -2,7 +2,7 @@ import fullScreenLoader from '../components/full-screen-loader'
 import { Router } from '../lib/router'
 import { sharedParamsOf } from '../lib/share'
 import { defaultTierList, tierListPath, tierLists } from '../tierlists'
-import tierList, { openShared } from './tierlist'
+import tierList, { agentHost, openShared } from './tierlist'
 
 /**
  * A shared link (`/?type=<list id>&selections=…`) fills its list in, behind a
@@ -22,9 +22,25 @@ const openSharedLink = async (app: HTMLDivElement) => {
   history.replaceState(null, '', list ? tierListPath(list) : location.pathname)
 }
 
+/**
+ * In browsers with WebMCP, AI agents get tools to make tier lists on the page
+ * (see src/lib/webmcp.ts), which only they load.
+ */
+const registerAgentTools = async (app: HTMLDivElement, router: Router) => {
+  const { modelContext } = document
+  if (!modelContext) return
+  const { tierListTools } = await import('../lib/webmcp')
+  const host = agentHost(app, tierLists, (list) => router.navigate(tierListPath(list)))
+  for (const tool of tierListTools(host)) {
+    modelContext
+      .registerTool(tool)
+      .catch((error) => console.error(`Failed to register the ${tool.name} WebMCP tool`, error))
+  }
+}
+
 export default async function render(app: HTMLDivElement) {
   await openSharedLink(app)
-  return new Router(
+  const router = new Router(
     [
       {
         path: '/',
@@ -37,4 +53,6 @@ export default async function render(app: HTMLDivElement) {
     ],
     app,
   )
+  void registerAgentTools(app, router)
+  return router
 }

@@ -12,6 +12,7 @@ import {
   isBaseTier,
   baseTierOf,
   hasRankedOptions,
+  addTier,
 } from '../src/lib/tiers.ts'
 
 const BASE = ['S', 'A', 'B', 'C', 'D', 'F']
@@ -177,5 +178,23 @@ h = addOptions(h, ['1'], 'F')
 assert.equal(hasRankedOptions(h), true)
 assert.equal(hasRankedOptions(removeOption(h, '1')), false)
 assert.equal(hasRankedOptions({ order: ['S'], items: { X: ['1'] } }), false) // only tiers in `order` count
+
+// --- addTier puts a variant right above (+) or below (-) its closest ancestor, in any order ---
+let t = addOptions(initialTierState(BASE), ['1'], 'A')
+t = addTier(t, 'A++') // no A+ yet: right above A
+assert.deepEqual(t.order, ['S', 'A++', 'A', 'B', 'C', 'D', 'F'])
+t = addTier(t, 'A+') // between them
+t = addTier(t, 'A--')
+t = addTier(t, 'A-')
+assert.deepEqual(t.order, ['S', 'A++', 'A+', 'A', 'A-', 'A--', 'B', 'C', 'D', 'F'])
+assert.deepEqual(t.items['A+'], [])
+assert.deepEqual(t.items.A, ['1']) // options stay put
+assert.equal(addTier(t, 'A+'), t) // already there
+assert.equal(addTier(t, 'B'), t) // a base tier isn't a variant
+assert.equal(addTier(t, 'A+-'), t) // mixed modifiers
+assert.equal(addTier(t, 'X+'), t) // no ancestor
+const noF = initialTierState(['A', 'F+'])
+assert.deepEqual(addTier(noF, 'F++').order, ['A', 'F++', 'F+']) // a configured variant is an ancestor too
+assert.equal(addTier(noF, 'F-'), noF) // but its base isn't there
 
 console.log('all tier logic tests passed ✓')

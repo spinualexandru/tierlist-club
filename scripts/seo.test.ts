@@ -95,5 +95,6 @@ assert.ok(llms.startsWith('# tierlist.club\n\n> '))
 assert.ok(llms.includes('- [Model Tier List Maker](https://tierlist.club/models): Rank models.'))
 assert.ok(llms.includes('You can rank: Amp, Pi & Co.'))
 assert.ok(llms.includes('`agents` or `models`'))
+assert.ok(llms.includes('## AI agents\n\nIn browsers with WebMCP'))
 
 console.log('seo tests passed')

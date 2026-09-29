@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { releasedWithin, searchOptions, type TierOption } from '../src/lib/tierlist.ts'
+import { matchOption, releasedWithin, searchOptions, type TierOption } from '../src/lib/tierlist.ts'
 
 const option = (id: string, name: string): TierOption => ({ id, name, image: '' })
 const OPTIONS = [
@@ -35,5 +35,22 @@ assert.equal(released('2025-09-27'), false)
 assert.equal(released('2025-09'), true) // could be as late as 2025-09-30
 assert.equal(released('2025-08'), false)
 assert.equal(released(undefined), true) // undated counts as recent
+
+// --- matchOption: an exact id, else an id or name ignoring case and punctuation, else a unique substring ---
+const matched = (ref: string) => {
+  const match = matchOption(OPTIONS, ref)
+  return 'option' in match ? match.option.id : match.candidates.map((o) => o.id)
+}
+assert.equal(matched('kilo-code'), 'kilo-code')
+assert.equal(matched('Claude Code'), 'claude-code')
+assert.equal(matched('github copilot'), 'github-copilot')
+assert.equal(matched('ZED'), 'zed')
+assert.equal(matched('copilot'), 'github-copilot') // the only one containing it
+assert.deepEqual(matched('code'), ['claude-code', 'kilo-code']) // ambiguous
+assert.deepEqual(matched('cursor'), [])
+assert.deepEqual(matched(' - '), []) // nothing to match on, not everything
+// An exact name wins over options that merely contain it.
+const codex = [option('codex', 'Codex'), option('codex-mini', 'Codex Mini')]
+assert.deepEqual(matchOption(codex, 'CODEX'), { option: codex[0] })
 
 console.log('tierlist tests passed')

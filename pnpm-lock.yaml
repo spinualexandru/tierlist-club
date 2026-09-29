@@ -206,6 +206,9 @@ importers:
       vite:
         specifier: ^8.3.1
         version: 8.3.1(esbuild@0.28.1)(jiti@2.7.0)
+      webmcp-types:
+        specifier: ^0.1.10
+        version: 0.1.10
       wrangler:
         specifier: ^4.141.0
         version: 4.141.0(@cloudflare/workers-types@5.20260927.1)
@@ -1554,6 +1557,9 @@ packages:
       yaml:
         optional: true
 
+  webmcp-types@0.1.10:
+    resolution: {integrity: sha512-U4GQ1RpJ0tqCUt2ALMV9Pnhi+hsy8L31f/Q1v4mLVhW64r5sYhh+2+SjP/Lq4/9jP33vZgNkuRZARJl65A/ZIg==}
+
   workerd@1.20260925.1:
     resolution: {integrity: sha512-cl7Mrvhm+xEC9brMBIWIHyfYl7y5dGH3CjQog6CglWhgRwAq+/b+2gHBXNQb4hsjLXQVCuCYExJRYCjEaZmAlA==}
     engines: {node: '>=16'}
@@ -2497,6 +2503,8 @@ snapshots:
       esbuild: 0.28.1
       fsevents: 2.3.3
       jiti: 2.7.0
+
+  webmcp-types@0.1.10: {}
 
   workerd@1.20260925.1:
     optionalDependencies:

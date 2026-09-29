@@ -81,3 +81,24 @@ export const searchOptions = (options: TierOption[], query: string): TierOption[
     (option) => searchKey(option.name).includes(key) || searchKey(option.id).includes(key),
   )
 }
+
+/** The option a name or id stands for, or the options it could be (none if it matches nothing). */
+export type OptionMatch = { option: TierOption } | { candidates: TierOption[] }
+
+/**
+ * The option `ref` names, however an AI agent put it: its exact id, else the
+ * options whose id or name it equals ignoring case, spaces, punctuation, and
+ * accents ("claude code" is Claude Code), else the ones containing it, like
+ * `searchOptions`. A match only if that leaves one.
+ */
+export const matchOption = (options: TierOption[], ref: string): OptionMatch => {
+  const byId = options.find((option) => option.id === ref)
+  if (byId) return { option: byId }
+  const key = searchKey(ref)
+  if (!key) return { candidates: [] }
+  const equal = options.filter(
+    (option) => searchKey(option.id) === key || searchKey(option.name) === key,
+  )
+  const matches = equal.length > 0 ? equal : searchOptions(options, ref)
+  return matches.length === 1 ? { option: matches[0] } : { candidates: matches }
+}

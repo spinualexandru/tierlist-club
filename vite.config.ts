@@ -5,7 +5,8 @@ export default defineConfig({
   oxc: {},
   plugins: [tailwindcss()],
   build: {
-    assetsInlineLimit: 10240,
+    // Fonts stay separate files: each weight and script subset loads only once the page uses it.
+    assetsInlineLimit: (file, content) => !/\.woff2?$/.test(file) && content.length < 10240,
     rolldownOptions: {
       output: {
         // Dependencies change far less often than the app, so they get their own

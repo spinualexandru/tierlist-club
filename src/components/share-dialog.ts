@@ -52,7 +52,7 @@ export default function shareDialog({ url }: ShareDialogProps): string {
                   type="button"
                   data-share-copy
                   aria-label="Copy link"
-                  class="group m-0 inline-flex items-center justify-center gap-2 h-10 px-3 rounded-xl bg-brand text-sm font-semibold text-white cursor-pointer select-none hover:brightness-110 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  class="group m-0 inline-flex items-center justify-center gap-2 h-10 px-3 rounded-xl bg-brand text-sm font-semibold text-tier-text cursor-pointer select-none hover:brightness-110 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 >
                   ${COPY_ICON}${COPIED_ICON}
                   <span data-share-copy-label>Copy</span>

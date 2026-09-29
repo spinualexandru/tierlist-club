@@ -1,12 +1,12 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-brand: #3b82f6;
+  --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand: #ff7f7e;
   --color-danger: #f87171;
 
   --color-background: #111111;
-  --color-border: #161616;
-  --color-tier-border: #161616;
   --color-tier-text: #111111;
 
   --color-tier-s: #ff7f7e;
@@ -27,31 +27,108 @@ body,
 }
 
 body {
-  font-family: sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--color-background);
   color: #ffffff;
 }
 
-/* --- Tier list frame --- */
+/* --- Site header --- */
 
-/* Tier colors S → F, shared by the rainbow borders */
+/* A soft red glow behind the wordmark */
+.wordmark {
+  text-shadow: 0 0 1.5rem color-mix(in srgb, var(--color-tier-s) 30%, transparent);
+}
+
+/* The chevron flips while the list menu is open */
+.list-switcher svg {
+  transition: rotate 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.list-switcher:has(+ .list-menu:popover-open) svg {
+  rotate: 180deg;
+}
+
+/* The list menu drops down from under the switcher, fading in */
+.list-menu {
+  inset: auto;
+  top: 4.25rem;
+  right: 1rem;
+  margin: 0;
+  opacity: 0;
+  translate: 0 -0.25rem;
+  transition:
+    opacity 150ms ease-out,
+    translate 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    overlay 200ms allow-discrete,
+    display 200ms allow-discrete;
+}
+
+@supports (anchor-name: --list-switcher) {
+  .list-switcher {
+    anchor-name: --list-switcher;
+  }
+
+  .list-menu {
+    position-anchor: --list-switcher;
+    top: calc(anchor(bottom) + 0.5rem);
+    right: anchor(right);
+  }
+}
+
+.list-menu:popover-open {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@starting-style {
+  .list-menu:popover-open {
+    opacity: 0;
+    translate: 0 -0.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list-switcher svg,
+  .list-menu {
+    transition: none;
+  }
+}
+
+/* --- Tier rows --- */
+
+/* Each row draws its stretch of the rail down the left, in its tier's color (`--tier-color`) */
+.tier-row::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.25rem;
+  background-color: var(--tier-color);
+}
+
+/* Glowing dot by the tier's name */
+.tier-dot {
+  background-color: var(--tier-color);
+  box-shadow: 0 0 0.75rem 0.125rem color-mix(in srgb, var(--tier-color) 40%, transparent);
+  transition:
+    opacity 150ms ease-out,
+    scale 250ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 150ms ease-out;
+}
+
+/* The flag of controls flying off the rail, in place of the dot while hovered */
+.tier-controls {
+  background-color: var(--tier-color);
+  box-shadow: 0 0 0.75rem 0.125rem color-mix(in srgb, var(--tier-color) 40%, transparent);
+  transition: opacity 150ms ease-out;
+}
+
+/* --- Export button --- */
+
+/* Tier colors S → F */
 :root {
   --rainbow-stops:
     var(--color-tier-s), var(--color-tier-a), var(--color-tier-b), var(--color-tier-c),
     var(--color-tier-d), var(--color-tier-f);
-}
-
-/* Border running through the tier colors, top to bottom */
-.rainbow-border {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--color-background), var(--color-background)) padding-box,
-    linear-gradient(to bottom, var(--rainbow-stops)) border-box;
-}
-
-/* Fill running through the tier colors, top to bottom, e.g. the header's active list */
-.rainbow-fill {
-  background: linear-gradient(to bottom, var(--rainbow-stops));
 }
 
 /* Registered so the gradient's start angle can be animated */
@@ -171,20 +248,35 @@ body {
 
 /* --- Drag-and-drop feedback --- */
 
+/* Tier lit up in its color while an option hovers over it: a wash fading out from the rail, behind the options */
 .tier-row {
-  transition:
-    background-color 150ms ease-out,
-    border-color 150ms ease-out,
-    box-shadow 150ms ease-out;
+  isolation: isolate;
 }
 
-/* Tier highlighted while an option hovers over it */
-.tier-row.drag-over {
-  border-color: rgba(255, 255, 255, 0.4);
-  background-color: rgba(255, 255, 255, 0.05);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.5),
-    0 0 20px rgba(255, 255, 255, 0.12);
+.tier-row::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 0 1rem 1rem 0;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--tier-color) 12%, transparent),
+    transparent 85%
+  );
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.tier-row.drag-over::after {
+  opacity: 1;
+}
+
+/* …and its dot swells */
+.tier-row.drag-over .tier-dot {
+  scale: 1.35;
+  box-shadow: 0 0 1.25rem 0.25rem color-mix(in srgb, var(--tier-color) 55%, transparent);
 }
 
 /* Source cell while its option is being dragged */

@@ -1,4 +1,5 @@
 import { ADD_OPTION_ICON, DISCARD_ICON, MINUS_ICON, PLUS_ICON, TRASH_ICON } from '../lib/icons'
+import { tierColors, type TierLetter } from '../theme'
 import { escapeHtml } from '../lib/render'
 import type { TierOption } from '../lib/tierlist'
 import { baseTierOf, isBaseTier } from '../lib/tiers'
@@ -60,89 +61,98 @@ const trashCell = (): string => html`
   </div>
 `
 
-/** Hidden until the tier block is hovered (or keyboard-focused). */
-const CONTROL_HIDDEN = 'opacity-0 transition duration-150 ease-out'
+/** A tier's color, picked by its base letter, for the rail, dot, and controls (see style.css). */
+const tierColorOf = (id: string): string =>
+  tierColors[baseTierOf(id) as TierLetter] ?? 'var(--color-neutral-600)'
 
 /**
- * From md up the controls float at the top/bottom edge of the letter block, so
- * the row height follows the letter and the options rather than the controls.
+ * One of the flag's buttons, with a tooltip beside it while hovered or
+ * keyboard-focused. Disabled ones keep theirs, to say why.
  */
-const CONTROL_POSITION = {
-  above: 'md:absolute md:top-1.5 md:left-1/2 md:-translate-x-1/2',
-  below: 'md:absolute md:bottom-1.5 md:left-1/2 md:-translate-x-1/2',
-} as const
-
-const spawnControl = (
-  id: string,
-  direction: 'above' | 'below',
+const controlButton = (
+  attribute: string,
+  tooltip: string,
   icon: string,
   enabled: boolean,
 ): string => html`
   <button
     type="button"
-    data-add-${direction}="${id}"
-    aria-label="Add tier ${direction}"
+    ${attribute}
+    aria-label="${tooltip}"
     ${enabled ? '' : 'disabled'}
-    class="${CONTROL_POSITION[direction]} m-0 p-0 inline-flex items-center justify-center h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 rounded-full text-tier-text select-none ${CONTROL_HIDDEN} ${
+    class="group/control relative m-0 p-0 flex-1 inline-flex items-center justify-center text-black/60 select-none transition duration-150 ease-out ${
       enabled
-        ? 'cursor-pointer group-hover:opacity-100 focus-visible:opacity-100 enabled:hover:bg-black/10 enabled:active:scale-90'
-        : 'cursor-not-allowed group-hover:opacity-30'
+        ? 'cursor-pointer hover:text-black active:scale-90 focus-visible:outline-2 focus-visible:outline-white'
+        : 'cursor-not-allowed [&>svg]:opacity-40'
     }"
   >
     ${icon}
+    <span
+      aria-hidden="true"
+      class="pointer-events-none absolute left-full top-1/2 ml-3 -translate-x-1 -translate-y-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-neutral-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg shadow-black/40 opacity-0 transition duration-150 ease-out group-hover/control:opacity-100 group-hover/control:translate-x-0 group-focus-visible/control:opacity-100 group-focus-visible/control:translate-x-0"
+    >
+      ${tooltip}
+    </span>
   </button>
 `
 
-/** The letter itself — or, for deletable variants, a trash icon on hover. */
-const letterSlot = (id: string): string => {
-  const letter = html`
-    <span
-      class="m-0 p-0 leading-none ${
-        !isBaseTier(id) ? 'transition-opacity duration-150 group-hover:opacity-0' : ''
-      }"
-      >${id}</span
-    >
-  `
-  if (isBaseTier(id)) return letter
-
-  return html`
-    <span class="relative inline-flex items-center justify-center">
-      ${letter}
-      <button
-        type="button"
-        data-remove="${id}"
-        aria-label="Delete tier"
-        class="m-0 p-0 absolute inset-0 inline-flex items-center justify-center text-tier-text cursor-pointer select-none active:scale-90 ${CONTROL_HIDDEN} group-hover:opacity-100 focus-visible:opacity-100"
-      >
-        ${TRASH_ICON}
-      </button>
-    </span>
-  `
+/** Tooltip for spawning `id`'s `suffix` variant, or for why it can't be spawned (see `canSpawnTier`). */
+const spawnTooltip = (id: string, suffix: '+' | '-', enabled: boolean): string => {
+  const where = suffix === '+' ? 'above' : 'below'
+  if (enabled) return `Add ${id}${suffix} tier ${where}`
+  // A variant can't reverse its own modifier ('A+' can't spawn 'A+-'); otherwise it's there already.
+  return id.includes(suffix === '+' ? '-' : '+')
+    ? `Can't add a tier ${where} ${id}`
+    : `${id}${suffix} already exists`
 }
+
+/**
+ * The flag hanging off the rail at the tier's top, in place of its dot while
+ * the tier is hovered (or keyboard-focused): + on top spawns a variant above,
+ * − at the bottom one below, and the trash between them deletes the tier, for
+ * spawned variants only. Stacked, it keeps the gutter narrow.
+ */
+const controls = (id: string, canAbove: boolean, canBelow: boolean): string => html`
+  <div
+    class="tier-controls absolute left-0 top-0 z-10 flex flex-col w-10 h-27 rounded-r-lg opacity-0 group-hover/tier:opacity-100 has-focus-visible:opacity-100"
+  >
+    ${controlButton(`data-add-above="${id}"`, spawnTooltip(id, '+', canAbove), PLUS_ICON, canAbove)}
+    ${controlButton(
+      `data-remove="${id}"`,
+      isBaseTier(id) ? "Base tiers can't be deleted" : `Delete ${id} tier`,
+      TRASH_ICON,
+      !isBaseTier(id),
+    )}
+    ${controlButton(`data-add-below="${id}"`, spawnTooltip(id, '-', canBelow), MINUS_ICON, canBelow)}
+  </div>
+`
 
 export function tier(props: TierProps): string
 export function tier(app: HTMLElement, props: TierProps): string
 export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: TierProps): string {
   const props = (maybeProps ?? appOrProps) as TierProps
-  const colorClass = tierColorClass(props.id)
   const items = props.items ?? []
   const canAbove = props.canSpawnAbove ?? true
   const canBelow = props.canSpawnBelow ?? true
 
+  // The rail segment (::before), dot, and flag sit in the row's left gutter, left of the name.
   return html`
     <div
       data-tier="${props.id}"
-      class="tier-row group/tier grow shrink-0 min-h-[216px] sm:min-h-[240px] md:min-h-28 flex md:flex-row flex-col sm:flex-col items-stretch w-full overflow-hidden"
+      style="--tier-color: ${tierColorOf(props.id)}"
+      class="tier-row group/tier relative grow shrink-0 flex flex-col pl-15 pb-5"
     >
-      <div
-        class="group relative w-full sm:w-full md:w-42 lg:w-46 md:h-full shrink-0 flex flex-col items-center justify-center gap-1 sm:gap-1.5 md:gap-0 p-2 sm:p-4 md:px-6 md:py-3 text-2xl sm:text-4xl md:text-[clamp(2.25rem,6vh,4.5rem)] font-medium leading-none select-none text-tier-text ${colorClass}"
-      >
-        ${spawnControl(props.id, 'above', PLUS_ICON, canAbove)} ${letterSlot(props.id)}
-        ${spawnControl(props.id, 'below', MINUS_ICON, canBelow)}
-      </div>
+      <span
+        aria-hidden="true"
+        class="tier-dot absolute left-8 top-2.5 h-4 w-4 rounded-full group-hover/tier:opacity-0"
+      ></span>
+      ${controls(props.id, canAbove, canBelow)}
+      <h2 class="m-0 h-9 flex items-center text-lg font-normal leading-none select-none">
+        ${props.id} Tier
+      </h2>
       <div
         data-items
-        class="md:flex-1 flex flex-wrap content-center items-start gap-3 sm:gap-4 px-3 sm:px-6 py-3 text-white"
+        class="flex-1 flex flex-wrap content-start items-start gap-3 sm:gap-4 pt-3 text-white"
       >
         ${items
           .map(({ id, name, image, monochrome }) => {

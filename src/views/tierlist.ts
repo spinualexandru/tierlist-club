@@ -13,7 +13,6 @@ import { DOWNLOAD_ICON, RESET_ICON, SHARE_ICON } from '../lib/icons'
 import { decodeSelections, encodeSelections, sharePath } from '../lib/share'
 import { searchOptions, type TierList, type TierOption } from '../lib/tierlist'
 import { tierListPath, tierLists } from '../tierlists'
-import { mountSiteHeader } from './site-header'
 import {
   initialTierState,
   addOptions,
@@ -116,21 +115,28 @@ const glide = (el: HTMLElement, from: DOMRect) => {
   })
 }
 
-/** Delay between options popping in together, e.g. after "Add all". */
+/** Delay between the first two options popping in together, e.g. after "Add all". */
 const POP_STAGGER_MS = 25
+
+/**
+ * Each later gap is this fraction of the one before, so the cascade speeds up
+ * exponentially: a few options still pop in one by one, and however many there
+ * are, the last one starts within POP_STAGGER_MS / (1 - POP_STAGGER_DECAY) (~420ms).
+ */
+const POP_STAGGER_DECAY = 0.94
+
+/** When the `index`th of the options popping in together starts: the sum of the shrinking gaps before it. */
+const popDelay = (index: number): number =>
+  (POP_STAGGER_MS * (1 - POP_STAGGER_DECAY ** index)) / (1 - POP_STAGGER_DECAY)
 
 /** Smallest side of the (square) PNG export, in CSS pixels. */
 const MIN_EXPORT_SIDE = 480
 
-/** Background margin around the tier list in the PNG export, in CSS pixels. */
-const EXPORT_MARGIN = 32
+/** Background margin around the tier list in the PNG export, in CSS pixels, on top of its own padding. */
+const EXPORT_MARGIN = 16
 
 /** The trash can's gulp once a deleted option is in, fading it out. */
 const GULP_DURATION_MS = 320
-
-// Rainbow border around the tier list, disabled for now: swap these two lines to bring it back.
-// const TIER_LIST_FRAME = 'rainbow-border'
-const TIER_LIST_FRAME = ''
 
 export default function (app: HTMLDivElement, list: TierList, signal: AbortSignal) {
   const tierState = tierStateOf(list)
@@ -173,7 +179,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       if (!id) continue
 
       if (poppingIds.has(id)) {
-        cell.style.animationDelay = `${popped++ * POP_STAGGER_MS}ms`
+        cell.style.animationDelay = `${popDelay(popped++)}ms`
         cell.classList.add('dropped')
         continue
       }
@@ -185,7 +191,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
   }
   signal.addEventListener('abort', tierState.listen(renderTiers), { once: true })
 
-  // Hover controls on the tier letter: +/− spawn a variant, trash deletes it.
+  // Hover controls in the flag by a tier's name: +/− spawn a variant, trash deletes it.
   app.addEventListener(
     'click',
     (event) => {
@@ -804,9 +810,17 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     { signal },
   )
 
+  // Picking a list closes the header's list menu, including the one already open (which doesn't navigate).
+  app.addEventListener(
+    'click',
+    (event) => {
+      if (!(event.target instanceof Element) || !event.target.closest('[data-list-menu] a')) return
+      app.querySelector<HTMLElement>('[data-list-menu]')?.hidePopover()
+    },
+    { signal },
+  )
+
   document.title = `${list.name} · tierlist.club`
-  // The router mounts the returned markup synchronously, so it's in place by this microtask.
-  queueMicrotask(() => mountSiteHeader(app, signal))
 
   return html`
     <div class="${themeClass} flex-col">
@@ -821,7 +835,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       <div class="relative flex-1 min-w-0 min-h-0">
         <div
           data-tiers
-          class="${TIER_LIST_FRAME} flex flex-col w-full h-full rounded-2xl md:rounded-3xl overflow-x-hidden overflow-y-auto divide-y divide-tier-border shadow-2xl"
+          class="flex flex-col h-[calc(100%+1rem)] -mx-4 px-4 pt-3 pb-4 overflow-x-hidden overflow-y-auto"
         >
           ${tiersHtml(tierState.get(), optionsById)}
         </div>
@@ -835,14 +849,14 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
             action: 'reset',
             label: 'Reset tier list',
             icon: RESET_ICON,
-            frame: 'border border-tier-s bg-background',
+            frame: 'border border-white/10 bg-background',
             confirmLabel: 'You sure?',
           })}
           ${actionButton({
             action: 'share',
             label: 'Share link',
             icon: SHARE_ICON,
-            frame: 'border border-brand bg-background',
+            frame: 'border border-white/10 bg-background',
           })}
           ${actionButton({
             action: 'export',

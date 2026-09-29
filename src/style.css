@@ -3,19 +3,52 @@
 @theme {
   --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 
+  /*
+   * Colors that differ between the themes are `light-dark(<light>, <dark>)`. They
+   * follow `color-scheme` (set below), so a fixed theme and the system's setting
+   * share one set of values.
+   */
   --color-brand: #ff7f7e;
-  --color-danger: #f87171;
+  --color-danger: light-dark(#dc2626, #f87171);
 
-  --color-background: #111111;
+  --color-background: light-dark(#fafafa, #111111);
+  --color-foreground: light-dark(#171717, #ffffff);
+  /* Secondary text: the light theme needs a stronger tint to read as well as the dark one */
+  --color-muted: light-dark(rgb(23 23 23 / 0.65), rgb(255 255 255 / 0.5));
+  /* Popovers, dialogs, and tooltips */
+  --color-surface: light-dark(#ffffff, #171717);
+  --color-shade: light-dark(rgb(15 23 42 / 0.2), rgb(0 0 0 / 0.6));
+  --color-shade-soft: light-dark(rgb(15 23 42 / 0.12), rgb(0 0 0 / 0.4));
+  /* Behind a modal dialog */
+  --color-scrim: light-dark(rgb(15 23 42 / 0.4), rgb(0 0 0 / 0.55));
+  /* Option chips stay dark in the light theme, since most logos are drawn for dark tiles */
+  --color-chip: light-dark(#1c1c1f, rgb(255 255 255 / 0.05));
+  --color-chip-hover: light-dark(#37373d, rgb(255 255 255 / 0.15));
+
+  /* Text on a tier's color, which is light in both themes */
   --color-tier-text: #111111;
 
-  --color-tier-s: #ff7f7e;
-  --color-tier-a: #ffbf7f;
-  --color-tier-b: #ffdf80;
-  --color-tier-c: #f2f481;
-  --color-tier-d: #c1ff80;
-  --color-tier-e: #a0ff80;
-  --color-tier-f: #7eff80;
+  /* Deeper in the light theme, so the rail and dots show against the light page */
+  --color-tier-s: light-dark(#f8605f, #ff7f7e);
+  --color-tier-a: light-dark(#f9a24d, #ffbf7f);
+  --color-tier-b: light-dark(#f3c53c, #ffdf80);
+  --color-tier-c: light-dark(#dcdd45, #f2f481);
+  --color-tier-d: light-dark(#9ade4b, #c1ff80);
+  --color-tier-e: light-dark(#6ada56, #a0ff80);
+  --color-tier-f: light-dark(#44d25a, #7eff80);
+}
+
+/* The system's setting by default; a fixed theme (see src/lib/theme.ts) overrides it */
+:root {
+  color-scheme: light dark;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 :root,
@@ -29,14 +62,15 @@ body,
 body {
   font-family: var(--font-sans);
   background-color: var(--color-background);
-  color: #ffffff;
+  color: var(--color-foreground);
 }
 
 /* --- Site header --- */
 
-/* A soft red glow behind the wordmark */
+/* A soft red glow behind the wordmark, in the dark theme */
 .wordmark {
-  text-shadow: 0 0 1.5rem color-mix(in srgb, var(--color-tier-s) 30%, transparent);
+  text-shadow: 0 0 1.5rem
+    light-dark(transparent, color-mix(in srgb, var(--color-tier-s) 30%, transparent));
 }
 
 /* The chevron flips while the list menu is open */
@@ -87,9 +121,30 @@ body {
   }
 }
 
+/* The theme toggle's three icons share its one cell: the current mode's turns into view, the others away */
+.theme-toggle svg {
+  grid-area: 1 / 1;
+  opacity: 0;
+  rotate: -90deg;
+  scale: 0.5;
+  transition:
+    opacity 150ms ease-out,
+    rotate 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-toggle[data-mode='light'] .theme-icon-light,
+.theme-toggle[data-mode='dark'] .theme-icon-dark,
+.theme-toggle[data-mode='system'] .theme-icon-system {
+  opacity: 1;
+  rotate: 0deg;
+  scale: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .list-switcher svg,
-  .list-menu {
+  .list-menu,
+  .theme-toggle svg {
     transition: none;
   }
 }
@@ -286,8 +341,8 @@ body {
 
 .option-cell.dragging .option-chip {
   box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.9),
-    0 0 18px 3px rgba(255, 255, 255, 0.35);
+    0 0 0 3px color-mix(in srgb, var(--color-foreground) 90%, transparent),
+    0 0 18px 3px color-mix(in srgb, var(--color-foreground) 35%, transparent);
 }
 
 /* Source cell while the ghost previews a new spot in its own tier */
@@ -309,8 +364,8 @@ body {
 
 .option-cell.ghost .option-chip {
   box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.6),
-    0 0 18px 3px rgba(255, 255, 255, 0.22);
+    0 0 0 3px color-mix(in srgb, var(--color-foreground) 60%, transparent),
+    0 0 18px 3px color-mix(in srgb, var(--color-foreground) 22%, transparent);
 }
 
 @keyframes ghost-fade-in {
@@ -346,8 +401,8 @@ body {
 }
 
 .trash-chip {
-  border-color: rgba(255, 255, 255, 0.3);
-  color: rgba(255, 255, 255, 0.45);
+  border-color: color-mix(in srgb, var(--color-foreground) 30%, transparent);
+  color: var(--color-muted);
   transition:
     border-color 150ms ease-out,
     background-color 150ms ease-out,
@@ -436,7 +491,7 @@ body {
 }
 
 .option-picker[open]::backdrop {
-  background-color: rgba(0, 0, 0, 0.55);
+  background-color: var(--color-scrim);
   backdrop-filter: blur(2px);
 }
 
@@ -489,7 +544,7 @@ body {
 }
 
 .share-dialog[open]::backdrop {
-  background-color: rgba(0, 0, 0, 0.55);
+  background-color: var(--color-scrim);
   backdrop-filter: blur(2px);
 }
 
@@ -509,13 +564,13 @@ body {
 
 /* --- PNG export --- */
 
-/* Camera flash while the tier list is being captured */
+/* Camera flash while the tier list is being captured: light on the dark theme, dark on the light one */
 .export-flash {
   position: fixed;
   inset: 0;
   z-index: 60;
   pointer-events: none;
-  background-color: #ffffff;
+  background-color: var(--color-foreground);
   animation: export-flash 350ms ease-out forwards;
 }
 

@@ -1,5 +1,5 @@
 export const themeClass =
-  'h-full w-full bg-background text-white flex p-4 box-border overflow-hidden'
+  'h-full w-full bg-background text-foreground flex p-4 box-border overflow-hidden'
 
 export const tierColors = {
   S: 'var(--color-tier-s)',

@@ -11,6 +11,7 @@ import { squareSide } from '../lib/export-size'
 import { genie } from '../lib/genie'
 import { DOWNLOAD_ICON, RESET_ICON, SHARE_ICON } from '../lib/icons'
 import { decodeSelections, encodeSelections, sharePath } from '../lib/share'
+import { nextThemeMode, pageBackground, systemTheme, themeLabel, themeMode } from '../lib/theme'
 import { searchOptions, type TierList, type TierOption } from '../lib/tierlist'
 import { tierListPath, tierLists } from '../tierlists'
 import {
@@ -529,7 +530,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
         Object.assign(copy.style, { width: `${side}px`, height: `${side}px` })
         dataUrl = await toPng(copy, {
           pixelRatio: 2,
-          backgroundColor: '#111111',
+          backgroundColor: pageBackground(),
           width: side + 2 * EXPORT_MARGIN,
           height: side + 2 * EXPORT_MARGIN,
           // `width`/`height` above size the image, with a margin around the tier list.
@@ -810,6 +811,28 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     { signal },
   )
 
+  // The header's theme toggle flips the mode (see src/lib/theme.ts, which applies it), and shows it.
+  // Its label names where a click leads, which depends on the system's setting too.
+  const syncThemeToggle = () => {
+    const toggle = app.querySelector<HTMLElement>('[data-theme-toggle]')
+    if (!toggle) return
+    const label = themeLabel(themeMode.get(), systemTheme().matches)
+    toggle.dataset.mode = themeMode.get()
+    toggle.title = label
+    toggle.setAttribute('aria-label', label)
+  }
+  signal.addEventListener('abort', themeMode.listen(syncThemeToggle), { once: true })
+  systemTheme().addEventListener('change', syncThemeToggle, { signal })
+
+  app.addEventListener(
+    'click',
+    (event) => {
+      if (event.target instanceof Element && event.target.closest('[data-theme-toggle]'))
+        themeMode.set(nextThemeMode(themeMode.get(), systemTheme().matches))
+    },
+    { signal },
+  )
+
   // Picking a list closes the header's list menu, including the one already open (which doesn't navigate).
   app.addEventListener(
     'click',
@@ -831,6 +854,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
           title: other.name,
           active: other.id === list.id,
         })),
+        themeMode: themeMode.get(),
       })}
       <div class="relative flex-1 min-w-0 min-h-0">
         <div
@@ -849,14 +873,14 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
             action: 'reset',
             label: 'Reset tier list',
             icon: RESET_ICON,
-            frame: 'border border-white/10 bg-background',
+            frame: 'border border-foreground/10 bg-background',
             confirmLabel: 'You sure?',
           })}
           ${actionButton({
             action: 'share',
             label: 'Share link',
             icon: SHARE_ICON,
-            frame: 'border border-white/10 bg-background',
+            frame: 'border border-foreground/10 bg-background',
           })}
           ${actionButton({
             action: 'export',
@@ -869,12 +893,12 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       <dialog
         data-picker
         aria-labelledby="option-picker-title"
-        class="option-picker scheme-dark m-0 left-auto right-0 h-dvh max-h-dvh w-80 sm:w-96 max-w-[85vw] p-0 border-0 border-l border-white/10 bg-neutral-900 text-white shadow-2xl shadow-black/60"
+        class="option-picker m-0 left-auto right-0 h-dvh max-h-dvh w-80 sm:w-96 max-w-[85vw] p-0 border-0 border-l border-foreground/10 bg-surface text-foreground shadow-2xl shadow-shade"
       ></dialog>
       <dialog
         data-share-dialog
         aria-labelledby="share-dialog-title"
-        class="share-dialog scheme-dark m-auto w-[32rem] max-w-[calc(100vw-2rem)] p-0 rounded-2xl border border-white/10 bg-neutral-900 text-white shadow-2xl shadow-black/60"
+        class="share-dialog m-auto w-[32rem] max-w-[calc(100vw-2rem)] p-0 rounded-2xl border border-foreground/10 bg-surface text-foreground shadow-2xl shadow-shade"
       ></dialog>
     </div>
   `

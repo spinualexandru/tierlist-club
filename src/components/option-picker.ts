@@ -38,10 +38,10 @@ export const optionPickerItems = ({
     return html`
       <div
         role="status"
-        class="h-full flex flex-col items-center justify-center gap-3 px-6 text-center text-white/60"
+        class="h-full flex flex-col items-center justify-center gap-3 px-6 text-center text-foreground/60"
       >
         ${LOADING_ICON}
-        <p class="text-sm font-medium text-white/70">Loading options…</p>
+        <p class="text-sm font-medium text-foreground/70">Loading options…</p>
       </div>
     `
   }
@@ -52,12 +52,12 @@ export const optionPickerItems = ({
         role="alert"
         class="h-full flex flex-col items-center justify-center gap-1.5 px-6 text-center"
       >
-        <p class="text-sm font-medium text-white/70">Couldn't load the options</p>
-        <p class="text-xs text-white/45">Check your connection and try again.</p>
+        <p class="text-sm font-medium text-foreground/70">Couldn't load the options</p>
+        <p class="text-xs text-muted">Check your connection and try again.</p>
         <button
           type="button"
           data-picker-retry
-          class="mt-3 m-0 inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-white/10 text-sm font-medium text-white cursor-pointer select-none hover:bg-white/15 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-white"
+          class="mt-3 m-0 inline-flex items-center gap-2 h-9 px-3 rounded-lg bg-foreground/10 text-sm font-medium text-foreground cursor-pointer select-none hover:bg-foreground/15 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-foreground"
         >
           ${RETRY_ICON} Try again
         </button>
@@ -68,8 +68,8 @@ export const optionPickerItems = ({
   if (options.length === 0 && searching) {
     return html`
       <div class="h-full flex flex-col items-center justify-center gap-1.5 px-6 text-center">
-        <p class="text-sm font-medium text-white/70">No matches</p>
-        <p class="text-xs text-white/45">
+        <p class="text-sm font-medium text-foreground/70">No matches</p>
+        <p class="text-xs text-muted">
           ${
             filtering
               ? `Nothing left to add goes by that name, or “${filter?.label}” hides it.`
@@ -83,8 +83,8 @@ export const optionPickerItems = ({
   if (options.length === 0 && filtering) {
     return html`
       <div class="h-full flex flex-col items-center justify-center gap-1.5 px-6 text-center">
-        <p class="text-sm font-medium text-white/70">Nothing recent left to add</p>
-        <p class="text-xs text-white/45">Uncheck “${filter?.label}” to see the rest.</p>
+        <p class="text-sm font-medium text-foreground/70">Nothing recent left to add</p>
+        <p class="text-xs text-muted">Uncheck “${filter?.label}” to see the rest.</p>
       </div>
     `
   }
@@ -92,8 +92,8 @@ export const optionPickerItems = ({
   if (options.length === 0) {
     return html`
       <div class="h-full flex flex-col items-center justify-center gap-1.5 px-6 text-center">
-        <p class="text-sm font-medium text-white/70">Everything is on the list</p>
-        <p class="text-xs text-white/45">Drag an option onto the trash can to take it off again.</p>
+        <p class="text-sm font-medium text-foreground/70">Everything is on the list</p>
+        <p class="text-xs text-muted">Drag an option onto the trash can to take it off again.</p>
       </div>
     `
   }
@@ -111,10 +111,10 @@ export const optionPickerItems = ({
                   type="button"
                   data-pick="${escapeHtml(id)}"
                   title="Add ${optionName}"
-                  class="group w-full m-0 flex flex-col items-center gap-1.5 rounded-xl p-2 cursor-pointer select-none hover:bg-white/5 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-white"
+                  class="group w-full m-0 flex flex-col items-center gap-1.5 rounded-xl p-2 cursor-pointer select-none hover:bg-foreground/5 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-foreground"
                 >
                   <span
-                    class="rounded-xl bg-white/5 group-hover:bg-white/15 p-2 transition duration-150 ease-out"
+                    class="rounded-xl bg-chip group-hover:bg-chip-hover p-2 transition duration-150 ease-out"
                   >
                     <img
                       src="${escapeHtml(image)}"
@@ -125,7 +125,7 @@ export const optionPickerItems = ({
                     />
                   </span>
                   <span
-                    class="w-full text-center text-xs leading-tight font-medium text-balance wrap-break-word text-white/70 group-hover:text-white"
+                    class="w-full text-center text-xs leading-tight font-medium text-balance wrap-break-word text-foreground/70 group-hover:text-foreground"
                   >
                     ${optionName}
                   </span>
@@ -135,14 +135,14 @@ export const optionPickerItems = ({
           })
           .join('')}
       </ul>
-      <div class="sticky bottom-0 mt-auto p-3 sm:p-4 border-t border-white/10 bg-neutral-900">
+      <div class="sticky bottom-0 mt-auto p-3 sm:p-4 border-t border-foreground/10 bg-surface">
         <button
           type="button"
           data-pick-all
           aria-label="Add all ${options.length}${searching ? ' matching' : ''} options to tier ${tier}"
           class="${tierColorClass(
             tier,
-          )} w-full m-0 inline-flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold text-tier-text cursor-pointer select-none hover:brightness-110 active:scale-[0.98] transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          )} w-full m-0 inline-flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold text-tier-text cursor-pointer select-none hover:brightness-110 active:scale-[0.98] transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
         >
           ${ADD_ALL_ICON} Add all
           <span class="rounded-md bg-black/10 px-1.5 py-0.5 text-xs tabular-nums"
@@ -165,7 +165,7 @@ export const optionPickerItems = ({
 export default function optionPicker({ tier, options, status, filter }: OptionPickerProps): string {
   return html`
     <div class="h-full flex flex-col">
-      <header class="flex items-center gap-3 px-4 py-4 sm:px-5 border-b border-white/10">
+      <header class="flex items-center gap-3 px-4 py-4 sm:px-5 border-b border-foreground/10">
         <span
           class="${tierColorClass(
             tier,
@@ -174,20 +174,20 @@ export default function optionPicker({ tier, options, status, filter }: OptionPi
         >
         <div class="flex-1 min-w-0">
           <h2 id="option-picker-title" class="m-0 text-base font-semibold">Add to tier ${tier}</h2>
-          <p class="m-0 text-xs text-white/50">Pick as many as you like</p>
+          <p class="m-0 text-xs text-muted">Pick as many as you like</p>
         </div>
         <button
           type="button"
           data-picker-close
           aria-label="Close"
-          class="m-0 p-0 inline-flex items-center justify-center h-9 w-9 rounded-lg text-white/60 cursor-pointer hover:bg-white/10 hover:text-white active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-white"
+          class="m-0 p-0 inline-flex items-center justify-center h-9 w-9 rounded-lg text-foreground/60 cursor-pointer hover:bg-foreground/10 hover:text-foreground active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-foreground"
         >
           ${CLOSE_ICON}
         </button>
       </header>
-      <div class="px-4 py-3 sm:px-5 border-b border-white/10">
+      <div class="px-4 py-3 sm:px-5 border-b border-foreground/10">
         <label
-          class="flex items-center gap-2 h-10 px-3 rounded-xl bg-white/5 text-white/45 focus-within:bg-white/10 focus-within:text-white/70 focus-within:outline-2 focus-within:outline-white transition duration-150 ease-out"
+          class="flex items-center gap-2 h-10 px-3 rounded-xl bg-foreground/5 text-muted focus-within:bg-foreground/10 focus-within:text-foreground/70 focus-within:outline-2 focus-within:outline-foreground transition duration-150 ease-out"
         >
           ${SEARCH_ICON}
           <input
@@ -199,14 +199,14 @@ export default function optionPicker({ tier, options, status, filter }: OptionPi
             autocomplete="off"
             spellcheck="false"
             enterkeyhint="done"
-            class="flex-1 min-w-0 m-0 p-0 border-0 bg-transparent text-sm text-white placeholder:text-white/45 outline-none"
+            class="flex-1 min-w-0 m-0 p-0 border-0 bg-transparent text-sm text-foreground placeholder:text-muted outline-none"
           />
         </label>
         ${
           filter
             ? html`
                 <label
-                  class="mt-3 flex items-center gap-2 text-xs font-medium text-white/70 cursor-pointer select-none hover:text-white"
+                  class="mt-3 flex items-center gap-2 text-xs font-medium text-foreground/70 cursor-pointer select-none hover:text-foreground"
                 >
                   <input
                     type="checkbox"

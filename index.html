@@ -8,8 +8,17 @@
       name="description"
       content="Rank AI models and coding harnesses in a drag-and-drop tier list."
     />
-    <meta name="theme-color" content="#111111" />
-    <meta name="color-scheme" content="dark" />
+    <!-- Follows the system's setting until src/lib/theme.ts takes over, and matches the page's background. -->
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- A saved light or dark theme is set before first paint, so the page doesn't flash the other one. -->
+    <script>
+      try {
+        var theme = localStorage.getItem('theme')
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme
+      } catch (error) {}
+    </script>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="240x240" />
     <link rel="apple-touch-icon" href="/logo-180.png" sizes="180x180" />

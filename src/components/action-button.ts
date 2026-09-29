@@ -23,14 +23,14 @@ export default function actionButton({
   confirmLabel,
 }: ActionButtonProps): string {
   return html`
-    <div class="${frame} p-1 rounded-2xl shadow-lg shadow-black/40">
+    <div class="${frame} p-1 rounded-2xl shadow-lg shadow-shade-soft">
       <button
         type="button"
         data-${action}
         aria-label="${label}"
         class="${
           confirmLabel ? 'confirm-action' : ''
-        } group relative inline-flex items-center justify-center h-12 min-w-12 px-2.5 rounded-xl text-white/90 cursor-pointer select-none hover:text-white hover:bg-white/10 data-armed:text-tier-s data-armed:bg-tier-s/15 active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-white"
+        } group relative inline-flex items-center justify-center h-12 min-w-12 px-2.5 rounded-xl text-foreground/90 cursor-pointer select-none hover:text-foreground hover:bg-foreground/10 data-armed:text-tier-s data-armed:bg-tier-s/15 active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-foreground"
       >
         ${icon}
         ${
@@ -42,7 +42,7 @@ export default function actionButton({
         }
         <span
           aria-hidden="true"
-          class="pointer-events-none absolute bottom-full right-0 mb-3 translate-y-1 whitespace-nowrap rounded-lg border border-white/10 bg-neutral-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg shadow-black/40 opacity-0 transition duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0"
+          class="pointer-events-none absolute bottom-full right-0 mb-3 translate-y-1 whitespace-nowrap rounded-lg border border-foreground/10 bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground shadow-lg shadow-shade-soft opacity-0 transition duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-focus-visible:opacity-100 group-focus-visible:translate-y-0"
         >
           ${label}
         </span>

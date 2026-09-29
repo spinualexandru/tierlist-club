@@ -36,7 +36,7 @@ const addOptionCell = (id: string): string => html`
     type="button"
     data-add-option="${id}"
     aria-label="Add options to tier ${id}"
-    class="${CHIP_SIZE} shrink-0 m-0 p-0 inline-flex items-center justify-center rounded-xl border-2 border-dashed border-white/25 text-white/45 cursor-pointer select-none opacity-0 group-hover/tier:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 hover:border-white/60 hover:bg-white/5 hover:text-white active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-white"
+    class="${CHIP_SIZE} shrink-0 m-0 p-0 inline-flex items-center justify-center rounded-xl border-2 border-dashed border-foreground/25 text-muted cursor-pointer select-none opacity-0 group-hover/tier:opacity-100 focus-visible:opacity-100 pointer-coarse:opacity-100 hover:border-foreground/60 hover:bg-foreground/5 hover:text-foreground active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-foreground"
   >
     ${ADD_OPTION_ICON}
   </button>
@@ -82,14 +82,14 @@ const controlButton = (
     ${enabled ? '' : 'disabled'}
     class="group/control relative m-0 p-0 flex-1 inline-flex items-center justify-center text-black/60 select-none transition duration-150 ease-out ${
       enabled
-        ? 'cursor-pointer hover:text-black active:scale-90 focus-visible:outline-2 focus-visible:outline-white'
+        ? 'cursor-pointer hover:text-black active:scale-90 focus-visible:outline-2 focus-visible:outline-foreground'
         : 'cursor-not-allowed [&>svg]:opacity-40'
     }"
   >
     ${icon}
     <span
       aria-hidden="true"
-      class="pointer-events-none absolute left-full top-1/2 ml-3 -translate-x-1 -translate-y-1/2 whitespace-nowrap rounded-lg border border-white/10 bg-neutral-900 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg shadow-black/40 opacity-0 transition duration-150 ease-out group-hover/control:opacity-100 group-hover/control:translate-x-0 group-focus-visible/control:opacity-100 group-focus-visible/control:translate-x-0"
+      class="pointer-events-none absolute left-full top-1/2 ml-3 -translate-x-1 -translate-y-1/2 whitespace-nowrap rounded-lg border border-foreground/10 bg-surface px-2.5 py-1.5 text-xs font-medium text-foreground shadow-lg shadow-shade-soft opacity-0 transition duration-150 ease-out group-hover/control:opacity-100 group-hover/control:translate-x-0 group-focus-visible/control:opacity-100 group-focus-visible/control:translate-x-0"
     >
       ${tooltip}
     </span>
@@ -152,7 +152,7 @@ export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: T
       </h2>
       <div
         data-items
-        class="flex-1 flex flex-wrap content-start items-start gap-3 sm:gap-4 pt-3 text-white"
+        class="flex-1 flex flex-wrap content-start items-start gap-3 sm:gap-4 pt-3 text-foreground"
       >
         ${items
           .map(({ id, name, image, monochrome }) => {
@@ -167,7 +167,7 @@ export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: T
                 class="option-cell group flex flex-col items-center gap-1.5 shrink-0 hover:scale-110 transition duration-150 ease-out cursor-grab active:cursor-grabbing select-none"
               >
                 <div
-                  class="option-chip rounded-xl bg-white/5 group-hover:bg-white/15 p-1.5 sm:p-2 transition duration-150 ease-out"
+                  class="option-chip rounded-xl bg-chip group-hover:bg-chip-hover p-1.5 sm:p-2 transition duration-150 ease-out"
                 >
                   <img
                     src="${escapeHtml(image)}"
@@ -179,7 +179,7 @@ export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: T
                   />
                 </div>
                 <span
-                  class="w-0 min-w-full text-xs sm:text-sm leading-tight font-medium text-center text-balance wrap-break-word text-white/70"
+                  class="w-0 min-w-full text-xs sm:text-sm leading-tight font-medium text-center text-balance wrap-break-word text-foreground/70"
                 >
                   ${optionName}
                 </span>

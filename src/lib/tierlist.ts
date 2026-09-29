@@ -26,7 +26,7 @@ export interface TierList {
   id: string
   /** Human-readable title, e.g. 'AI models', for the page title and tooltips. */
   name: string
-  /** Short name in the header's list switcher, e.g. 'Models'. */
+  /** Short name in the header's list switcher menu, e.g. 'Models'. */
   label: string
   /**
    * Tier ids shown by default, top to bottom, e.g. ['S', 'A+', 'A', 'B', 'F', 'F-'].

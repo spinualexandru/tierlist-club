@@ -5,11 +5,14 @@ import downloadIcon from 'lucide-static/icons/download.svg?raw'
 import listPlusIcon from 'lucide-static/icons/list-plus.svg?raw'
 import loaderCircleIcon from 'lucide-static/icons/loader-circle.svg?raw'
 import minusIcon from 'lucide-static/icons/minus.svg?raw'
+import monitorIcon from 'lucide-static/icons/monitor.svg?raw'
+import moonIcon from 'lucide-static/icons/moon.svg?raw'
 import plusIcon from 'lucide-static/icons/plus.svg?raw'
 import refreshCwIcon from 'lucide-static/icons/refresh-cw.svg?raw'
 import rotateCcwIcon from 'lucide-static/icons/rotate-ccw.svg?raw'
 import searchIcon from 'lucide-static/icons/search.svg?raw'
 import share2Icon from 'lucide-static/icons/share-2.svg?raw'
+import sunIcon from 'lucide-static/icons/sun.svg?raw'
 import trashIcon from 'lucide-static/icons/trash-2.svg?raw'
 import xIcon from 'lucide-static/icons/x.svg?raw'
 
@@ -23,6 +26,15 @@ export const lucide = (raw: string, classes: string): string =>
 /** Site header: the list switcher's chevron, and a check by the active list in its menu. */
 export const CHEVRON_DOWN_ICON = lucide(chevronDownIcon, 'h-4.5 w-4.5 stroke-[2.5]')
 export const CHECK_ICON = lucide(checkIcon, 'h-4 w-4 text-tier-s')
+
+/** The theme toggle's icons, stacked in its button (see `.theme-toggle` in style.css): one per mode. */
+const themeIcon = (raw: string, mode: string) =>
+  lucide(raw, `theme-icon-${mode} h-5 w-5 stroke-[2.25]`)
+export const THEME_ICONS = [
+  themeIcon(sunIcon, 'light'),
+  themeIcon(moonIcon, 'dark'),
+  themeIcon(monitorIcon, 'system'),
+].join('')
 
 /** Tier hover controls, stacked in the flag hanging off the rail. */
 export const PLUS_ICON = lucide(plusIcon, 'h-5 w-5 stroke-[2.5]')

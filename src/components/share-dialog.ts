@@ -18,7 +18,7 @@ export default function shareDialog({ url }: ShareDialogProps): string {
       <header class="flex items-start gap-3">
         <div class="flex-1 min-w-0">
           <h2 id="share-dialog-title" class="m-0 text-base font-semibold">Share tier list</h2>
-          <p class="m-0 mt-0.5 text-xs text-white/50">
+          <p class="m-0 mt-0.5 text-xs text-muted">
             ${
               url
                 ? 'Anyone with this link sees your ranking.'
@@ -30,7 +30,7 @@ export default function shareDialog({ url }: ShareDialogProps): string {
           type="button"
           data-share-close
           aria-label="Close"
-          class="m-0 -mt-1 -mr-1 p-0 inline-flex items-center justify-center h-9 w-9 rounded-lg text-white/60 cursor-pointer hover:bg-white/10 hover:text-white active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-white"
+          class="m-0 -mt-1 -mr-1 p-0 inline-flex items-center justify-center h-9 w-9 rounded-lg text-foreground/60 cursor-pointer hover:bg-foreground/10 hover:text-foreground active:scale-90 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-foreground"
         >
           ${CLOSE_ICON}
         </button>
@@ -46,13 +46,13 @@ export default function shareDialog({ url }: ShareDialogProps): string {
                   value="${escapeHtml(url)}"
                   aria-label="Link to this tier list"
                   spellcheck="false"
-                  class="flex-1 min-w-0 h-10 px-3 rounded-xl bg-white/5 text-sm text-white/80 font-mono truncate outline-none focus:bg-white/10 focus:outline-2 focus:outline-white transition duration-150 ease-out"
+                  class="flex-1 min-w-0 h-10 px-3 rounded-xl bg-foreground/5 text-sm text-foreground/80 font-mono truncate outline-none focus:bg-foreground/10 focus:outline-2 focus:outline-foreground transition duration-150 ease-out"
                 />
                 <button
                   type="button"
                   data-share-copy
                   aria-label="Copy link"
-                  class="group m-0 inline-flex items-center justify-center gap-2 h-10 px-3 rounded-xl bg-brand text-sm font-semibold text-tier-text cursor-pointer select-none hover:brightness-110 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                  class="group m-0 inline-flex items-center justify-center gap-2 h-10 px-3 rounded-xl bg-brand text-sm font-semibold text-tier-text cursor-pointer select-none hover:brightness-110 active:scale-95 transition duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                 >
                   ${COPY_ICON}${COPIED_ICON}
                   <span data-share-copy-label>Copy</span>

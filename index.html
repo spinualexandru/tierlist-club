@@ -3,17 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>tierlist.club</title>
-    <meta
-      name="description"
-      content="Rank AI models and coding harnesses in a drag-and-drop tier list."
-    />
+    <!-- Title, description, canonical URL, link previews, and schema.org data for the page's list (src/lib/seo.ts). -->
+    <!--seo:head-->
     <!-- Follows the system's setting until src/lib/theme.ts takes over, and matches the page's background. -->
     <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#111111" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
-    <!-- A saved light or dark theme is set before first paint, so the page doesn't flash the other one. -->
+    <!--
+      A saved light or dark theme is set before first paint, so the page doesn't flash the other one.
+      The `js` class hides the prerendered page (for crawlers and no-JavaScript visitors) until the app replaces it.
+    -->
+    <style>
+      .js [data-prerendered] {
+        display: none;
+      }
+    </style>
     <script>
+      document.documentElement.classList.add('js')
       try {
         var theme = localStorage.getItem('theme')
         if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme
@@ -26,7 +32,7 @@
     <link rel="dns-prefetch" href="https://models.dev" />
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app"><!--seo:body--></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

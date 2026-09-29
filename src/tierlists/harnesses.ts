@@ -40,11 +40,16 @@ export const harnesses: TierList = {
   id: 'harnesses',
   name: 'AI harnesses',
   label: 'Harness',
+  title: 'AI Coding Agent Tier List Maker',
+  description:
+    'Rank AI coding agents like Claude Code, Codex, Cursor, GitHub Copilot, OpenCode, and Cline from S to F, then share a link or save a PNG. Free, no sign-up.',
+  about:
+    'Coding agents, also called harnesses, are the tools that put an AI model to work on code: terminal agents like Claude Code, Codex, and OpenCode, editors like Cursor and Zed, extensions like GitHub Copilot, Cline, and Roo Code, and cloud agents like Devin.',
   tiers: ['S', 'A', 'B', 'C', 'D', 'F'],
   options: [
     { id: 'amp', name: 'Amp', image: amp },
     { id: 'antigravity', name: 'Antigravity', image: antigravity },
-    { id: 'claude', name: 'Claude', image: claude },
+    { id: 'claude', name: 'Claude Code', image: claude },
     { id: 'cline', name: 'Cline', image: cline },
     { id: 'codex', name: 'Codex', image: codex },
     { id: 'crush', name: 'crush', image: crush },

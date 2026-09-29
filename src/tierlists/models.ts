@@ -71,6 +71,11 @@ export const models: TierList = {
   id: 'models',
   name: 'AI models',
   label: 'Models',
+  title: 'AI Model Tier List Maker',
+  description:
+    'Rank the latest AI models and LLMs, like Claude, GPT, Gemini, Grok, DeepSeek, Qwen, and Kimi, from S to F, then share a link or save a PNG. Free, no sign-up.',
+  about:
+    'Every text model on models.dev is here, so new releases show up as soon as they are listed: frontier models from Anthropic, OpenAI, Google, and xAI, and open-weight ones from DeepSeek, Qwen, Kimi, GLM, Mistral, and Llama. The picker leads with the newest flagships and hides models more than a year old until you ask for them.',
   tiers: ['S', 'A', 'B', 'C', 'D', 'F'],
   options: loadModels,
   pickerFilter: {

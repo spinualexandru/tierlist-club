@@ -1,4 +1,11 @@
-import { ADD_OPTION_ICON, DISCARD_ICON, MINUS_ICON, PLUS_ICON, TRASH_ICON } from '../lib/icons'
+import {
+  ADD_OPTION_ICON,
+  BROOM_ICON,
+  DISCARD_ICON,
+  MINUS_ICON,
+  PLUS_ICON,
+  TRASH_ICON,
+} from '../lib/icons'
 import { tierColors, type TierLetter } from '../theme'
 import { escapeHtml } from '../lib/render'
 import type { TierOption } from '../lib/tierlist'
@@ -109,20 +116,27 @@ const spawnTooltip = (id: string, suffix: '+' | '-', enabled: boolean): string =
 /**
  * The flag hanging off the rail at the tier's top, in place of its dot while
  * the tier is hovered (or keyboard-focused): + on top spawns a variant above,
- * − at the bottom one below, and the trash between them deletes the tier, for
- * spawned variants only. Stacked, it keeps the gutter narrow.
+ * − at the bottom one below, the broom clears the tier's options, and the
+ * trash deletes the tier, for spawned variants only. Stacked, it keeps the
+ * gutter narrow.
  */
-const controls = (id: string, canAbove: boolean, canBelow: boolean): string => html`
+const controls = (
+  id: string,
+  canAbove: boolean,
+  canBelow: boolean,
+  hasItems: boolean,
+): string => html`
   <div
-    class="tier-controls absolute left-0 top-0 z-10 flex flex-col w-10 h-27 rounded-r-lg opacity-0 group-hover/tier:opacity-100 has-focus-visible:opacity-100"
+    class="tier-controls absolute left-0 top-0 z-10 flex flex-col w-10 ${isBaseTier(id) ? 'h-27' : 'h-36'} rounded-r-lg opacity-0 group-hover/tier:opacity-100 has-focus-visible:opacity-100"
   >
     ${controlButton(`data-add-above="${id}"`, spawnTooltip(id, '+', canAbove), PLUS_ICON, canAbove)}
     ${controlButton(
-      `data-remove="${id}"`,
-      isBaseTier(id) ? "Base tiers can't be deleted" : `Delete ${id} tier`,
-      TRASH_ICON,
-      !isBaseTier(id),
+      `data-clear="${id}"`,
+      hasItems ? `Clear ${id} tier` : `${id} tier is already empty`,
+      BROOM_ICON,
+      hasItems,
     )}
+    ${isBaseTier(id) ? '' : controlButton(`data-remove="${id}"`, `Delete ${id} tier`, TRASH_ICON, true)}
     ${controlButton(`data-add-below="${id}"`, spawnTooltip(id, '-', canBelow), MINUS_ICON, canBelow)}
   </div>
 `
@@ -146,7 +160,7 @@ export default function tier(appOrProps: HTMLElement | TierProps, maybeProps?: T
         aria-hidden="true"
         class="tier-dot absolute left-8 top-2.5 h-4 w-4 rounded-full group-hover/tier:opacity-0"
       ></span>
-      ${controls(props.id, canAbove, canBelow)}
+      ${controls(props.id, canAbove, canBelow, items.length > 0)}
       <h2 class="m-0 h-9 flex items-center text-lg font-normal leading-none select-none">
         ${props.id} Tier
       </h2>

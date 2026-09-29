@@ -87,6 +87,12 @@ export const removeOption = (state: TierState, id: string): TierState => {
   }
 }
 
+/** Take every option off a tier, making them unranked again. A no-op if the tier is empty or unknown. */
+export const clearTier = (state: TierState, tierId: string): TierState => {
+  if (!state.items[tierId]?.length) return state
+  return { order: state.order, items: { ...state.items, [tierId]: [] } }
+}
+
 /**
  * Whether `tierId` can spawn a `suffix` variant: it exists, the variant doesn't
  * yet, and the suffix doesn't reverse a modifier it already has ('A+' can't

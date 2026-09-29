@@ -1,3 +1,4 @@
+import broomIcon from 'lucide-static/icons/broom.svg?raw'
 import checkIcon from 'lucide-static/icons/check.svg?raw'
 import chevronDownIcon from 'lucide-static/icons/chevron-down.svg?raw'
 import copyIcon from 'lucide-static/icons/copy.svg?raw'
@@ -39,6 +40,7 @@ export const THEME_ICONS = [
 /** Tier hover controls, stacked in the flag hanging off the rail. */
 export const PLUS_ICON = lucide(plusIcon, 'h-5 w-5 stroke-[2.5]')
 export const MINUS_ICON = lucide(minusIcon, 'h-5 w-5 stroke-[2.5]')
+export const BROOM_ICON = lucide(broomIcon, 'h-5 w-5 stroke-[2.25]')
 export const TRASH_ICON = lucide(trashIcon, 'h-5 w-5 stroke-[2.25]')
 
 /** Ghost cells after a tier's options: add options, or drop one to delete it. */

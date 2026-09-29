@@ -1,0 +1,6 @@
+# Everything is open to search engines and AI crawlers, except the analytics endpoint.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://tierlist.club/sitemap.xml

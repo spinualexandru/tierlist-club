@@ -12,6 +12,7 @@ import { genie } from '../lib/genie'
 import { DOWNLOAD_ICON, RESET_ICON, SHARE_ICON } from '../lib/icons'
 import { decodeSelections, encodeSelections, sharePath } from '../lib/share'
 import { nextThemeMode, pageBackground, systemTheme, themeLabel, themeMode } from '../lib/theme'
+import { absoluteUrl, pageTitle } from '../lib/seo'
 import { searchOptions, type TierList, type TierOption } from '../lib/tierlist'
 import { tierListPath, tierLists } from '../tierlists'
 import {
@@ -21,11 +22,29 @@ import {
   removeOption,
   spawnTier,
   canSpawnTier,
+  clearTier,
   deleteTier,
   unrankedOptions,
   hasRankedOptions,
   type TierState,
 } from '../lib/tiers'
+
+/**
+ * Points the page's title, description, and canonical URL at the list, since
+ * switching lists doesn't reload the page with its own (see src/lib/seo.ts).
+ */
+const updateHead = (list: TierList) => {
+  const title = pageTitle(list)
+  const url = absoluteUrl(tierListPath(list))
+  const set = (selector: string, attribute: string, value: string) =>
+    document.head.querySelector(selector)?.setAttribute(attribute, value)
+  document.title = title
+  set('meta[name="description"]', 'content', list.description)
+  set('link[rel="canonical"]', 'href', url)
+  set('meta[property="og:title"]', 'content', title)
+  set('meta[property="og:description"]', 'content', list.description)
+  set('meta[property="og:url"]', 'content', url)
+}
 
 /** Option placement per tier, per tier list id — kept while navigating between lists. */
 const tierStates = new Map<string, WritableAtom<TierState>>()
@@ -192,7 +211,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
   }
   signal.addEventListener('abort', tierState.listen(renderTiers), { once: true })
 
-  // Hover controls in the flag by a tier's name: +/− spawn a variant, trash deletes it.
+  // Hover controls in the flag by a tier's name: +/− spawn a variant, the broom clears the tier, trash deletes it.
   app.addEventListener(
     'click',
     (event) => {
@@ -201,6 +220,11 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
       if (spawn) {
         const id = spawn.dataset.addAbove ?? spawn.dataset.addBelow
         if (id) tierState.set(spawnTier(tierState.get(), id, spawn.dataset.addAbove ? '+' : '-'))
+        return
+      }
+      const clear = event.target.closest<HTMLElement>('[data-clear]')
+      if (clear?.dataset.clear) {
+        tierState.set(clearTier(tierState.get(), clear.dataset.clear))
         return
       }
       const remove = event.target.closest<HTMLElement>('[data-remove]')
@@ -843,7 +867,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
     { signal },
   )
 
-  document.title = `${list.name} · tierlist.club`
+  updateHead(list)
 
   return html`
     <div class="${themeClass} flex-col">
@@ -856,7 +880,8 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
         })),
         themeMode: themeMode.get(),
       })}
-      <div class="relative flex-1 min-w-0 min-h-0">
+      <main class="relative flex-1 min-w-0 min-h-0">
+        <h1 class="sr-only">${list.title}</h1>
         <div
           data-tiers
           class="flex flex-col h-[calc(100%+1rem)] -mx-4 px-4 pt-3 pb-4 overflow-x-hidden overflow-y-auto"
@@ -889,7 +914,7 @@ export default function (app: HTMLDivElement, list: TierList, signal: AbortSigna
             frame: 'rainbow-border-spin',
           })}
         </div>
-      </div>
+      </main>
       <dialog
         data-picker
         aria-labelledby="option-picker-title"

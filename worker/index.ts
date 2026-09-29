@@ -1,9 +1,11 @@
-// Serves /api/* only; every other path is a static asset from dist/ (see
+// Serves /api/* and `/`; every other path is a static asset from dist/ (see
 // `run_worker_first` in wrangler.jsonc), so the SPA itself never runs this.
 
 interface Env {
   /** Workers Analytics Engine dataset `tierlist_events`. */
   EVENTS: AnalyticsEngineDataset
+  /** The static assets in dist/. */
+  ASSETS: Fetcher
 }
 
 /** Events the app sends from `src/lib/analytics.ts`. */
@@ -44,9 +46,27 @@ const recordEvent = async (request: Request, env: Env): Promise<Response> => {
   return status(204)
 }
 
+/**
+ * `/` is the default list's page, except for a shared link
+ * (`/?type=<list id>&selections=…`), which gets its list's page (`/<list id>`),
+ * so link previews and the canonical URL name the list that opens.
+ */
+const homePage = async (request: Request, env: Env): Promise<Response> => {
+  const type = new URL(request.url).searchParams.get('type')
+  if (type && LIST_ID.test(type) && (request.method === 'GET' || request.method === 'HEAD')) {
+    const page = await env.ASSETS.fetch(new URL(`/${type}`, request.url), {
+      method: request.method,
+    })
+    if (page.ok) return page
+  }
+  return env.ASSETS.fetch(request)
+}
+
 export default {
   fetch(request, env) {
-    if (new URL(request.url).pathname === '/api/event') return recordEvent(request, env)
+    const { pathname } = new URL(request.url)
+    if (pathname === '/api/event') return recordEvent(request, env)
+    if (pathname === '/') return homePage(request, env)
     return Promise.resolve(status(404))
   },
 } satisfies ExportedHandler<Env>

@@ -7,10 +7,13 @@
   "main": "worker/index.ts",
   "assets": {
     "directory": "./dist",
-    // Unknown paths (/harnesses, /models, ...) get index.html, so the client router takes over.
-    "not_found_handling": "single-page-application",
-    // Only these paths reach the Worker script; the rest are served straight from dist/.
-    "run_worker_first": ["/api/*"],
+    "binding": "ASSETS",
+    // Every list has its own prerendered page (/models serves models.html, see the `seo` plugin
+    // in vite.config.ts), so any other path is a real 404, with the app's 404 page.
+    "not_found_handling": "404-page",
+    // Only these paths reach the Worker script; the rest are served straight from dist/. `/` is
+    // there for shared links (`/?type=<list id>&…`), which get their list's page.
+    "run_worker_first": ["/api/*", "/"],
   },
   "routes": [{ "pattern": "tierlist.club", "custom_domain": true }],
   "preview_urls": true,

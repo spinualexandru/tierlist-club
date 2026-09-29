@@ -29,6 +29,18 @@ export interface TierList {
   /** Short name in the header's list switcher menu, e.g. 'Models'. */
   label: string
   /**
+   * Search-friendly title, e.g. 'AI Model Tier List Maker', for the page's
+   * `<title>`, heading, and link previews. Phrase it the way people search.
+   */
+  title: string
+  /** Meta description for search results and link previews, up to about 160 characters. */
+  description: string
+  /**
+   * A paragraph on what gets ranked, for the prerendered page and llms.txt
+   * (see src/lib/seo.ts), which crawlers and LLMs read without running the app.
+   */
+  about: string
+  /**
    * Tier ids shown by default, top to bottom, e.g. ['S', 'A+', 'A', 'B', 'F', 'F-'].
    * Ids without a trailing +/- are permanent; variants can be deleted.
    */

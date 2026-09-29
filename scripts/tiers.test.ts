@@ -8,6 +8,7 @@ import {
   deleteTier,
   moveOption,
   removeOption,
+  clearTier,
   isBaseTier,
   baseTierOf,
   hasRankedOptions,
@@ -148,6 +149,17 @@ assert.equal(removeOption(r, 'missing'), r)
 r = moveOption(r, '2', 'B', '3') // and it can be added back
 assert.deepEqual(r.items['B'], ['2', '3'])
 assert.deepEqual(unrankedOptions(r, ['1', '2', '3']), [])
+
+// --- clearing empties one tier and leaves the others ---
+let cl = seeded(['A', 'B'], ['1', '2'])
+cl = moveOption(cl, '3', 'B')
+cl = clearTier(cl, 'A')
+assert.deepEqual(cl.items['A'], [])
+assert.deepEqual(cl.items['B'], ['3'])
+assert.deepEqual(cl.order, ['A', 'B'])
+assert.deepEqual(unrankedOptions(cl, ['1', '2', '3']), ['1', '2'])
+assert.equal(clearTier(cl, 'A'), cl) // already empty
+assert.equal(clearTier(cl, 'missing'), cl)
 
 // --- adding several at once appends the unranked ones in order, leaving ranked ones put ---
 let a = seeded(['A', 'B'], ['1'])

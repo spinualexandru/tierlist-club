@@ -1,9 +1,10 @@
 import type { TierList } from '../lib/tierlist'
+import { assistants } from './assistants'
 import { harnesses } from './harnesses'
 import { models } from './models'
 
 /** Every available tier list. The first one is shown at `/`. */
-export const tierLists: TierList[] = [harnesses, models]
+export const tierLists: TierList[] = [harnesses, models, assistants]
 
 export const defaultTierList = tierLists[0]
 

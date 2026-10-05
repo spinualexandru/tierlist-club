@@ -8,14 +8,14 @@ import type { TierList } from './tierlist.ts'
 export const SITE_URL = 'https://tierlist.club'
 export const SITE_NAME = 'tierlist.club'
 const SITE_DESCRIPTION =
-  'Free tier list maker for AI: rank AI coding agents and AI models from S to F, then share a link or save a PNG.'
+  'Free tier list maker for AI: rank coding agents, models, and assistants from S to F, then share a link or save a PNG.'
 
 /** 1200×630, for link previews. */
 const SOCIAL_IMAGE = {
   path: '/og.png',
   width: 1200,
   height: 630,
-  alt: 'tierlist.club: tier list maker for AI coding agents and models',
+  alt: 'tierlist.club: tier list maker for AI coding agents, models, and assistants',
 }
 
 /** A tier list and the path it's served at canonically, `/` for the default list. */

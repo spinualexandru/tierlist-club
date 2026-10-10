@@ -79,6 +79,13 @@ const setup = () => {
   return { tools, call, ranking, shown, exports, states }
 }
 
+/** A tool call that failed with an error result matching `message`, as agents get them. */
+const fails = async (result: Promise<any>, message: RegExp) => {
+  const { isError, content } = await result
+  assert.equal(isError, true)
+  assert.match(content[0].text, message)
+}
+
 // --- the tools are valid WebMCP tools, and the read-only ones say so ---
 {
   const { tools } = setup()
@@ -139,7 +146,7 @@ const setup = () => {
   const ranked = await call('search_options', { query: 'sol' })
   assert.equal(ranked.list, 'models')
   assert.equal(ranked.options[0].tier, 'S')
-  await assert.rejects(call('search_options', { list: 'films' }), /no 'films' tier list/)
+  await fails(call('search_options', { list: 'films' }), /no 'films' tier list/)
 }
 
 // --- create_tier_list: replaces the ranking, adds in-between tiers, resolves names, and shows it ---
@@ -182,9 +189,9 @@ const setup = () => {
   assert.equal(again.warnings, undefined)
   assert.equal(again.tiers.length, 7)
 
-  // A bad tier throws before anything changes.
+  // A bad tier fails before anything changes.
   for (const tier of ['Z', 'A+-', 'A++++', '']) {
-    await assert.rejects(
+    await fails(
       call('create_tier_list', {
         list: 'agents',
         tiers: [
@@ -218,7 +225,7 @@ const setup = () => {
   const result = await call('rank_options', { tier: 'S+', options: ['roo code'], before: 'claude' })
   assert.deepEqual(ranking(AGENTS)['S+'], ['roo-code'])
   assert.match(result.warnings[0], /'claude' isn't in tier S\+/)
-  await assert.rejects(call('rank_options', { tier: 'Q', options: ['zed'] }), /has no tier 'Q'/)
+  await fails(call('rank_options', { tier: 'Q', options: ['zed'] }), /has no tier 'Q'/)
 }
 
 // --- remove_options: unranks them, noting ones that weren't ranked ---
@@ -258,7 +265,7 @@ const setup = () => {
 // --- share_tier_list: a link that opens the ranking, once there is one ---
 {
   const { call, states } = setup()
-  await assert.rejects(call('share_tier_list', { list: 'agents' }), /Nothing is ranked/)
+  await fails(call('share_tier_list', { list: 'agents' }), /Nothing is ranked/)
   await call('create_tier_list', {
     list: 'agents',
     tiers: [
@@ -292,7 +299,7 @@ const setup = () => {
     { list: 'models', download: true, pixelRatio: 2 },
     { list: 'models', download: false, pixelRatio: 1 },
   ])
-  await assert.rejects(call('export_tier_list_image', { output: 'gif' }), /'download' or 'image'/)
+  await fails(call('export_tier_list_image', { output: 'gif' }), /'download' or 'image'/)
 }
 
 console.log('webmcp tests passed')

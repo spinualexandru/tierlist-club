@@ -76,8 +76,27 @@ const placementsOf = (value: unknown): { tier: unknown; options: unknown }[] => 
 const describe = (option: TierOption): string => `${option.name} (${option.id})`
 
 /**
+ * `tool`, returning a failure as an MCP error result the agent can read. A
+ * rejected `execute` reaches the agent as a bare "OperationError" DOMException,
+ * without its message (https://github.com/webmachinelearning/webmcp/pull/339),
+ * so the tools throw and this turns what they throw into a result.
+ */
+const reportingErrors = (tool: WebMCP.ModelContextTool): WebMCP.ModelContextTool => ({
+  ...tool,
+  execute: async (input, options) => {
+    try {
+      return await tool.execute(input, options)
+    } catch (error) {
+      const text = error instanceof Error ? error.message : String(error)
+      return { isError: true, content: [{ type: 'text', text }] }
+    }
+  },
+})
+
+/**
  * The tools, as `document.modelContext.registerTool` takes them. The browser
- * hands their results to the agent as JSON; a failure throws, changing nothing.
+ * hands their results to the agent as JSON; a failure changes nothing and
+ * comes back as an error result (`isError`) saying what went wrong.
  */
 export const tierListTools = (host: TierListHost): WebMCP.ModelContextTool[] => {
   const bases = [...new Set(host.lists.flatMap((list) => list.tiers.filter(isBaseTier)))]
@@ -175,7 +194,7 @@ export const tierListTools = (host: TierListHost): WebMCP.ModelContextTool[] => 
     description: `${description} Each is an id or a name, as search_options returns them.`,
   })
 
-  return [
+  const tools: WebMCP.ModelContextTool[] = [
     {
       name: 'search_options',
       title: 'Search options',
@@ -412,4 +431,5 @@ export const tierListTools = (host: TierListHost): WebMCP.ModelContextTool[] => 
       },
     },
   ]
+  return tools.map(reportingErrors)
 }

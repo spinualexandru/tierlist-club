@@ -5,7 +5,7 @@
 // so this fetches models.json itself.
 
 import { Effect, Schedule, Schema } from 'effect'
-import { FetchHttpClient, HttpClient } from 'effect/unstable/http'
+import { FetchHttpClient, HttpClient } from 'effect/http'
 import { MODELS_DEV, modelOptions } from '../lib/models'
 import { releasedWithin, type TierList } from '../lib/tierlist'
 
